@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Juegos de Lucas</title>
+<meta name="theme-color" content="#F4F0FF">
+<link rel="icon" href="pokedex/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap">
+<style>
+/* Portada: título grande y una tarjeta por juego, de más nuevo a más viejo. */
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:#F4F0FF;color:#2b2140;font-family:"Mali",system-ui,sans-serif;min-height:100vh;
+  padding:calc(24px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(32px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.wrap{max-width:900px;margin:0 auto}
+h1{font-size:clamp(34px,7vw,56px);margin:0 0 6px;text-align:center;line-height:1.1}
+h1 .r,.card h2 .r{color:#E1262D}
+.sub{text-align:center;font-size:19px;margin:0 0 26px;color:#5b4d78}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:16px;padding:0;margin:0;list-style:none}
+.card{display:flex;flex-direction:column;align-items:center;gap:8px;background:#fff;border:3px solid #B79CF0;border-radius:24px;
+  padding:20px 16px;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+.card:hover,.card:focus-visible{transform:translateY(-4px);box-shadow:0 10px 24px rgba(120,80,200,.18);outline:none}
+.card .ico{font-size:64px;line-height:1}
+.card h2{margin:0;font-size:28px}
+.card p{margin:0;text-align:center;font-size:16px;color:#5b4d78}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="r">J</span>uegos de Lucas</h1>
+  <p class="sub">¡Elige un juego! 🎮</p>
+  <ul class="games">
+    <!-- Juegos nuevos: agregar su tarjeta aquí, al inicio de la lista -->
+    <li><a class="card" href="pokedex/">
+      <span class="ico" aria-hidden="true">🔴</span>
+      <h2><span class="r">P</span>okédex</h2>
+      <p>Mira y escucha a todos los Pokémon, adivina quién es y haz música</p>
+    </a></li>
+  </ul>
+</div>
+</body>
+</html>
