@@ -6,7 +6,7 @@ Sitio estático de juegos de ocio para Lucas (7 años). Cloudflare Pages publica
 
 - `public/index.html` — portada con una tarjeta por juego (la más nueva primero).
 - `public/<juego>/index.html` — cada juego en su carpeta (minúsculas, sin acentos, con guiones), con una casita `href="../"` para regresar a la portada.
-- `public/pokedex/` — Pokédex con 3 modos: 📖 Pokédex (favoritos, evoluciones, debilidades), ❓ ¿Quién es ese Pokémon? y 🎵 Música (canción con los cries, Web Audio). Usa PokeAPI y sprites/cries de GitHub (necesita internet).
+- `public/pokedex/` — Pokédex con 3 modos: 📖 Pokédex (favoritos, evoluciones, debilidades), ❓ ¿Quién es ese Pokémon? (por silueta o por sonido) y 🎵 Música (canción con los cries + batería Básica/Rock/Fiesta e instrumentos de fondo sintetizados: bajo, guitarra, piano, campanitas; volumen). Búsqueda por voz 🎤 (Web Speech API, es-MX) en los tres modos. Usa PokeAPI y sprites/cries de GitHub (necesita internet).
 
 ## Estilo
 
