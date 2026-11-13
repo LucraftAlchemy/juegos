@@ -1,0 +1,636 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aventura de Bloques</title>
+<meta name="theme-color" content="#F4F0FF">
+<link rel="icon" href="../pokedex/icon-180.png">
+<link rel="apple-touch-icon" href="../pokedex/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap">
+<style>
+/* Pantallas: elegir compañero → mapa de 6 niveles → ejercicio (10 por sesión) → medalla.
+   Bloques: unidad = cubito azul, decena = barra roja de 10, centena = placa amarilla de 10×10. */
+:root{
+  --bg:#F4F0FF; --ink:#2b2140; --muted:#5b4d78; --lila:#B79CF0; --lila2:#e6dcfb; --red:#E1262D; --ok:#2E9E4F; --gold:#F2B705;
+  --u:#2F7BE5; --u2:#1C55AE; --d:#E1262D; --d2:#A3141B; --c:#F7C51E; --c2:#B88C00;
+  --s:clamp(14px, min(3.3vh, 3vw), 30px); --sc:calc(var(--s) * .42);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Mali",system-ui,sans-serif;min-height:100vh;-webkit-tap-highlight-color:transparent;
+  padding:0 max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+button{font-family:inherit;color:inherit}
+.bar{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:calc(12px + env(safe-area-inset-top,0px)) 0 10px}
+.home,.pill{flex:none;width:48px;height:48px;border-radius:14px;background:#fff;border:3px solid var(--lila);display:grid;place-items:center;text-decoration:none;font-size:22px;cursor:pointer;padding:0}
+.pill img{width:38px;height:38px;object-fit:contain}
+h1{flex:1;min-width:0;margin:0;font-size:clamp(22px,4.4vw,34px);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.r{color:var(--red)}
+main{max-width:1100px;margin:0 auto}
+
+/* Compañero y globo de diálogo */
+.buddyRow{display:flex;align-items:center;gap:12px;margin:6px 0 10px}
+.buddy{flex:none;width:clamp(72px,11vw,104px);aspect-ratio:1;border-radius:50%;background:#fff;border:3px solid var(--lila);padding:4px;cursor:pointer;position:relative}
+.buddy img{width:100%;height:100%;object-fit:contain}
+.buddy::after{content:"🔊";position:absolute;right:-4px;bottom:-4px;font-size:18px;background:#fff;border-radius:50%;width:28px;height:28px;display:grid;place-items:center;border:2px solid var(--lila)}
+.buddy.talk img{animation:hop .5s ease 2}
+.bubble{position:relative;flex:1;min-width:0;background:#fff;border:3px solid var(--lila);border-radius:20px;padding:12px 16px;font-size:clamp(17px,2.4vw,22px);font-weight:700;line-height:1.3;min-height:56px}
+.bubble::before{content:"";position:absolute;left:-12px;top:50%;margin-top:-10px;border:10px solid transparent;border-right-color:var(--lila);border-left:0}
+
+/* Elegir compañero */
+.big{font-size:clamp(26px,5vw,40px);text-align:center;margin:8px 0 2px}
+.sub{text-align:center;font-size:18px;color:var(--muted);margin:0 0 16px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:12px;padding:0;margin:0;list-style:none}
+.pcard{width:100%;background:#fff;border:3px solid var(--lila2);border-radius:20px;padding:8px 6px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;font-weight:700;font-size:16px;transition:transform .15s}
+.pcard img{width:96px;height:96px;object-fit:contain}
+.pcard.sel{border-color:var(--red);background:#fff3f3;transform:scale(1.04)}
+.go{display:block;margin:18px auto 0;font:700 24px "Mali",sans-serif;border:0;border-radius:20px;padding:14px 34px;background:var(--ok);color:#fff;cursor:pointer;box-shadow:0 5px 0 #1f7438}
+.go:disabled{background:#bdb3d1;box-shadow:0 5px 0 #9a90b0;cursor:default}
+
+/* Mapa de niveles */
+.levels{list-style:none;padding:0;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.lvl{width:100%;height:100%;background:#fff;border:3px solid var(--lila);border-radius:24px;padding:14px;cursor:pointer;display:grid;grid-template-columns:auto 1fr;gap:4px 12px;align-items:center;text-align:left;transition:transform .15s}
+.lvl:hover:not(:disabled){transform:translateY(-3px)}
+.lvl .ic{grid-row:span 3;font-size:50px;line-height:1}
+.lvl .n{font-size:14px;color:var(--muted);font-weight:700}
+.lvl b{font-size:23px;line-height:1.1}
+.lvl small{font-size:15px;color:var(--muted)}
+.lvl .st{grid-column:1/-1;display:flex;justify-content:space-between;font-size:18px;margin-top:4px;color:var(--gold)}
+.lvl .st span:last-child{color:var(--ink)}
+.lvl:disabled{background:#ece8f4;border-color:#d4cce4;cursor:default;opacity:.75}
+
+/* Juego */
+.ptop{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.back{flex:none;font:700 17px "Mali",sans-serif;border:3px solid var(--lila);background:#fff;border-radius:14px;padding:8px 12px;cursor:pointer}
+#lvlName{font-weight:700;font-size:20px}
+.dots{display:flex;gap:5px;margin-left:auto}
+.dots i{width:22px;height:22px;border-radius:50%;background:#fff;border:2px solid var(--lila2);display:grid;place-items:center;font-style:normal;font-size:13px}
+.dots i.now{border-color:var(--red);border-width:3px}
+.dots i.star{background:var(--gold);border-color:var(--gold);color:#fff}
+.dots i.done{background:var(--ok);border-color:var(--ok);color:#fff}
+.task{text-align:center;font-size:clamp(30px,5.4vw,48px);font-weight:700;margin:0 0 8px;line-height:1.1}
+.task b{color:var(--red)}
+.tray{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;background:#fff;border:3px dashed var(--lila);border-radius:20px;padding:10px;margin:0 0 10px;--s:calc(clamp(14px, min(3.3vh, 3vw), 30px) * .6)}
+.tray .lab{font-weight:700;font-size:20px}
+.tray .grp{display:flex;align-items:flex-end;gap:4px;flex-wrap:wrap}
+.mesa{display:grid;gap:10px;background:#fff;border:3px solid var(--lila);border-radius:24px;padding:10px}
+.col{min-width:0;display:flex;flex-direction:column;gap:8px}
+.col .hd{border-radius:14px;padding:6px 8px;text-align:center;font-weight:700;font-size:clamp(14px,2vw,19px);color:#fff;display:flex;justify-content:center;gap:8px;flex-wrap:wrap}
+.col .hd em{font-style:normal;background:rgba(255,255,255,.3);border-radius:8px;padding:0 8px;min-width:30px}
+.col.c .hd{background:var(--c);color:#4a3600}
+.col.d .hd{background:var(--d)}
+.col.u .hd{background:var(--u)}
+.col .bd{min-height:calc(var(--s) * 10 + 8px);border-radius:14px;background:#faf8ff;padding:4px}
+.col.u .bd{display:grid;grid-template-rows:repeat(5,var(--s));grid-auto-flow:column;grid-auto-columns:var(--s);gap:4px;justify-content:center;align-content:start}
+.col.d .bd,.col.c .bd{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;align-content:flex-start;align-items:flex-start}
+
+/* Bloques con carita */
+.blk{flex:none;border:0;padding:0;margin:0;cursor:pointer;position:relative;border-radius:5px;--e:var(--s)}
+.blk::before{content:"";position:absolute;left:0;top:0;width:var(--e);height:var(--e);pointer-events:none;
+  background:radial-gradient(circle at 33% 42%,#1b1530 0 calc(var(--e)*.07),#fff calc(var(--e)*.075) calc(var(--e)*.15),transparent calc(var(--e)*.155)),
+             radial-gradient(circle at 67% 42%,#1b1530 0 calc(var(--e)*.07),#fff calc(var(--e)*.075) calc(var(--e)*.15),transparent calc(var(--e)*.155))}
+.blk::after{content:"";position:absolute;left:calc(var(--e)*.36);top:calc(var(--e)*.6);width:calc(var(--e)*.28);height:calc(var(--e)*.13);border:2px solid rgba(20,10,40,.55);border-top:0;border-radius:0 0 999px 999px;pointer-events:none}
+.blk.u{width:var(--s);height:var(--s);background:var(--u);box-shadow:inset 0 0 0 2px var(--u2)}
+.blk.d{width:var(--s);height:calc(var(--s) * 10);background:repeating-linear-gradient(180deg,var(--d) 0 calc(var(--s) - 2px),var(--d2) calc(var(--s) - 2px) var(--s));box-shadow:inset 0 0 0 2px var(--d2)}
+.blk.c{--e:calc(var(--sc) * 3.4);width:calc(var(--sc) * 10);height:calc(var(--sc) * 10);border-radius:6px;
+  background:repeating-linear-gradient(90deg,transparent 0 calc(var(--sc) - 1px),var(--c2) calc(var(--sc) - 1px) var(--sc)),repeating-linear-gradient(180deg,var(--c) 0 calc(var(--sc) - 1px),var(--c2) calc(var(--sc) - 1px) var(--sc));box-shadow:inset 0 0 0 2px var(--c2)}
+.blk.c::before{left:calc(50% - var(--e) / 2);top:calc(var(--sc) * 1.5)}
+.blk.c::after{left:calc(50% - var(--e) * .14);top:calc(var(--sc) * 1.5 + var(--e) * .6)}
+.blk.new{animation:pop .4s ease}
+.blk.gone{animation:gone .28s ease forwards}
+.blk.wig{animation:wig .35s}
+.col.glow .hd,.opt.glow,.act.glow{animation:glow 1s ease-in-out infinite}
+
+/* Botones */
+.controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;align-items:center;margin:12px 0 0}
+.act{font:700 clamp(17px,2.4vw,22px) "Mali",sans-serif;border:0;border-radius:18px;padding:12px 18px;min-height:60px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+.act:active:not(:disabled){transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.2)}
+.act:disabled{opacity:.4;cursor:default}
+.act .blk{--s:16px;cursor:inherit}
+.act .blk.d{height:44px;background:repeating-linear-gradient(180deg,var(--d) 0 2.4px,#fff 2.4px 4.4px);box-shadow:inset 0 0 0 2px #fff}
+.act .blk.d::before,.act .blk.d::after,.act .blk.c::before,.act .blk.c::after{display:none}
+.act .blk.c{--sc:3.4px;box-shadow:inset 0 0 0 2px var(--c2)}
+.act.u{background:var(--u)} .act.d{background:var(--d)} .act.c{background:var(--c);color:#4a3600}
+.act.ok{background:var(--ok)}
+.act.join{background:#7b4fd6}
+.act.mix{background:#7b4fd6}
+.info{font-size:22px;font-weight:700;background:#fff;border:3px solid var(--lila);border-radius:18px;padding:10px 18px}
+.opts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px auto 0;max-width:640px}
+.opt{font:700 clamp(30px,5vw,44px) "Mali",sans-serif;border:3px solid var(--lila);background:#fff;border-radius:22px;padding:12px 6px;cursor:pointer;box-shadow:0 5px 0 var(--lila)}
+.opt:disabled{opacity:.3;cursor:default;box-shadow:none}
+.opt.right{background:var(--ok);border-color:var(--ok);color:#fff;box-shadow:0 5px 0 #1f7438;opacity:1}
+
+/* Medalla */
+.medal{background:#fff;border:3px solid var(--lila);border-radius:28px;padding:24px 16px;text-align:center;max-width:560px;margin:20px auto 0}
+.medal .m{font-size:96px;line-height:1;animation:pop .6s ease}
+.medal img{width:130px;height:130px;object-fit:contain}
+.medal h2{font-size:clamp(26px,5vw,36px);margin:6px 0}
+.medal .stars{font-size:46px;color:var(--gold);letter-spacing:6px}
+.medal p{font-size:19px;color:var(--muted);margin:6px 0 14px}
+.medal .row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:none}}
+@keyframes gone{to{transform:scale(.15) rotate(20deg);opacity:0}}
+@keyframes wig{25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes glow{50%{box-shadow:0 0 0 6px rgba(242,183,5,.75)}}
+@keyframes hop{50%{transform:translateY(-10px)}}
+@media (max-width:600px){
+  .dots{margin-left:0;width:100%;justify-content:center}
+  .dots i{width:20px;height:20px}
+  .opts{gap:8px}
+  .act{padding:10px 14px;min-height:54px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="home" href="../" aria-label="Regresar a los juegos">🏠</a>
+  <h1><span class="r">A</span>ventura de Bloques</h1>
+  <button class="pill" id="buddyBtn" type="button" aria-label="Cambiar compañero" hidden><img id="buddyMini" alt=""></button>
+  <button class="pill" id="soundBtn" type="button" aria-label="Sonido">🔊</button>
+</header>
+
+<main>
+  <section id="pick" hidden>
+    <h2 class="big">¡Elige a tu compañero!</h2>
+    <p class="sub">Tócalo para escucharlo 🔊</p>
+    <ul class="pgrid" id="pgrid"></ul>
+    <button class="go" id="pickGo" type="button" disabled>¡Vamos! ▶</button>
+  </section>
+
+  <section id="map" hidden>
+    <div class="buddyRow"><button class="buddy" id="mapBuddy" type="button" aria-label="Escuchar a tu compañero"><img alt=""></button><div class="bubble"></div></div>
+    <ol class="levels" id="levels"></ol>
+  </section>
+
+  <section id="play" hidden>
+    <div class="ptop"><button class="back" id="toMap" type="button">🗺️ Mapa</button><span id="lvlName"></span><div class="dots" id="dots"></div></div>
+    <div class="buddyRow"><button class="buddy" id="playBuddy" type="button" aria-label="Escuchar otra vez"><img alt=""></button><div class="bubble"></div></div>
+    <div class="task" id="task"></div>
+    <div class="tray" id="tray" hidden></div>
+    <div class="mesa" id="mesa"></div>
+    <div class="controls" id="controls"></div>
+    <div class="opts" id="opts" hidden></div>
+  </section>
+
+  <section id="medal" hidden>
+    <div class="medal">
+      <div class="m">🏅</div>
+      <img id="medalImg" alt="">
+      <h2 id="medalTitle"></h2>
+      <div class="stars" id="medalStars"></div>
+      <p id="medalText"></p>
+      <div class="row">
+        <button class="act ok" id="mAgain" type="button">🔁 Otra vez</button>
+        <button class="act u" id="mNext" type="button">Siguiente ▶</button>
+        <button class="act mix" id="mMap" type="button">🗺️ Mapa</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<script>
+const ART = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+const CRY = id => `https://raw.githubusercontent.com/PokeAPI/cries/main/cries/pokemon/latest/${id}.ogg`;
+const MONS = [[25,"Pikachu"],[4,"Charmander"],[7,"Squirtle"],[1,"Bulbasaur"],[133,"Eevee"],[150,"Mewtwo"],[448,"Lucario"],[94,"Gengar"],
+  [131,"Lapras"],[384,"Rayquaza"],[906,"Sprigatito"],[658,"Greninja"],[700,"Sylveon"],[778,"Mimikyu"],[197,"Umbreon"]];
+const NAME = Object.fromEntries(MONS);
+const LEVELS = [
+  {key:"junta", icon:"🧱", name:"Junta 10",       desc:"Junta 10 cubitos y haz una decena", cols:["d","u"], add:["u"]},
+  {key:"arma",  icon:"🔢", name:"Arma el número", desc:"Usa decenas y unidades",            cols:["d","u"], add:["d","u"]},
+  {key:"suma",  icon:"➕", name:"Sumas",          desc:"Junta bloques y cuenta",            cols:["d","u"]},
+  {key:"resta", icon:"➖", name:"Restas",         desc:"Quita bloques y cuenta",            cols:["d","u"]},
+  {key:"cien",  icon:"💯", name:"Centenas",       desc:"Arma números grandes",              cols:["c","d","u"], add:["c","d","u"]},
+  {key:"reto",  icon:"🏆", name:"Gran reto",      desc:"Sumas, restas y centenas",          cols:["c","d","u"], add:["c","d","u"]},
+];
+const PER_SESSION = 10;
+const PLACE = {c:["centena","centenas","Centenas"], d:["decena","decenas","Decenas"], u:["unidad","unidades","Unidades"]};
+const UP = {u:"d", d:"c"};
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k,d){ try{ const v=localStorage.getItem("bloques."+k); return v==null?d:JSON.parse(v); }catch(e){ return d; } },
+  set(k,v){ try{ localStorage.setItem("bloques."+k, JSON.stringify(v)); }catch(e){} }
+};
+let buddy = store.get("buddy", null), soundOn = store.get("sound", true), prog = store.get("prog", {});
+let L = null, li = 0, ex = null, cnt = {c:0,d:0,u:0}, phase = "", attempts = 0, removed = 0, sess = null;
+let busy = false, flags = {}, tierMsg = "", lastAdded = null, revealed = false, tok = 0, lastLine = null;
+
+const R = (a,b) => a + Math.floor(Math.random()*(b-a+1));
+const dig = n => ({c:Math.floor(n/100), d:Math.floor(n/10)%10, u:n%10});
+const val = () => cnt.c*100 + cnt.d*10 + cnt.u;
+const P = k => prog[k] || (prog[k] = {best:0, medals:0, tier:0, ok:0, bad:0});
+const save = () => store.set("prog", prog);
+const unlocked = i => i===0 || P(LEVELS[i-1].key).medals > 0;
+const q = (n,k) => n===1 ? `una ${PLACE[k][0]}` : `${n} ${PLACE[k][1]}`;
+function phrase(g, cols){
+  let ks = cols.filter(k => g[k] !== undefined);
+  while(ks.length > 1 && g[ks[0]] === 0) ks.shift();           // sin ceros a la izquierda
+  const parts = ks.map(k => q(g[k], k));
+  return parts.length > 1 ? parts.slice(0,-1).join(", ") + " y " + parts.at(-1) : parts[0];
+}
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+
+/* ---------- Sonido: efectos sintetizados, cry del compañero y voz ---------- */
+let ac = null;
+function actx(){
+  if(!ac){ const C = window.AudioContext || window.webkitAudioContext; if(!C) return null; ac = new C(); }
+  if(ac.state === "suspended") ac.resume();
+  return ac;
+}
+function tone(f, t0, d, type="triangle", v=.12){
+  const c = actx(); if(!c || !soundOn) return;
+  const o = c.createOscillator(), g = c.createGain(), t = c.currentTime + t0;
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(v, t+.01); g.gain.exponentialRampToValueAtTime(.0008, t+d);
+  o.connect(g); g.connect(c.destination); o.start(t); o.stop(t+d+.02);
+}
+const sfx = {
+  pop(){ tone(660,0,.09); },
+  off(){ tone(440,0,.1,"sine",.1); },
+  join(){ [523,659,784].forEach((f,i)=>tone(f,i*.07,.14)); },
+  brk(){ [784,659,523].forEach((f,i)=>tone(f,i*.05,.1)); },
+  ok(){ [523,659,784,1047].forEach((f,i)=>tone(f,i*.08,.2)); },
+  soft(){ tone(330,0,.18,"sine",.07); },
+  win(){ [523,659,784,1047,784,1047].forEach((f,i)=>tone(f,i*.11,.25)); }
+};
+const cryEl = new Audio(); cryEl.preload = "auto";
+function playCry(id){
+  return new Promise(res => {
+    let done = false; const fin = () => { if(!done){ done = true; res(); } };
+    if(!soundOn || !id) return fin();
+    try{
+      cryEl.pause(); cryEl.src = CRY(id); cryEl.volume = .5;
+      cryEl.onended = fin; cryEl.onerror = fin;
+      const p = cryEl.play(); if(p && p.catch) p.catch(fin);
+    }catch(e){ fin(); }
+    setTimeout(fin, 2600);
+  });
+}
+function speakNow(text){
+  return new Promise(res => {
+    let done = false; const fin = () => { if(!done){ done = true; res(); } };
+    if(!soundOn || !("speechSynthesis" in window)) return setTimeout(fin, 600 + text.length*35);
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text), vs = speechSynthesis.getVoices();
+    u.voice = vs.find(v=>/es[-_]MX/i.test(v.lang)) || vs.find(v=>/^es/i.test(v.lang)) || null;
+    u.lang = u.voice ? u.voice.lang : "es-MX"; u.rate = .95;
+    u.onend = fin; u.onerror = fin;
+    speechSynthesis.speak(u);
+    setTimeout(fin, 2000 + text.length*85);
+  });
+}
+let sayN = 0;
+/* El compañero habla: primero su cry y luego la voz. Devuelve una promesa que se cumple al terminar. */
+function say(text, spoken, id){
+  const n = ++sayN; lastLine = [text, spoken, id];
+  const sec = document.querySelector("main > section:not([hidden])");
+  const bub = sec && sec.querySelector(".bubble"); if(bub) bub.textContent = text;
+  const bud = sec && sec.querySelector(".buddy");
+  if(bud){ bud.classList.remove("talk"); void bud.offsetWidth; bud.classList.add("talk"); }
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  return playCry(id || buddy).then(() => n === sayN ? speakNow(spoken || text) : null);
+}
+function hush(){ sayN++; try{ cryEl.pause(); }catch(e){} if("speechSynthesis" in window) speechSynthesis.cancel(); }
+
+/* ---------- Pantallas ---------- */
+function show(id){
+  for(const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
+  $("buddyBtn").hidden = !buddy || id === "pick";
+  if(buddy){
+    $("buddyMini").src = ART(buddy);
+    for(const img of document.querySelectorAll(".buddy img, #medalImg")){ img.src = ART(buddy); img.alt = NAME[buddy]; }
+  }
+  window.scrollTo(0,0);
+}
+
+let pickSel = null;
+function showPick(){
+  hush(); tok++; pickSel = buddy;
+  $("pgrid").innerHTML = MONS.map(([id,n]) =>
+    `<li><button class="pcard${id===buddy?" sel":""}" type="button" data-id="${id}"><img src="${ART(id)}" alt="" loading="lazy">${n}</button></li>`).join("");
+  $("pickGo").disabled = !pickSel;
+  show("pick");
+}
+$("pgrid").onclick = e => {
+  const b = e.target.closest(".pcard"); if(!b) return;
+  actx(); pickSel = +b.dataset.id;
+  for(const x of document.querySelectorAll(".pcard")) x.classList.toggle("sel", x === b);
+  $("pickGo").disabled = false;
+  say(`¡Yo te elijo, ${NAME[pickSel]}!`, null, pickSel);
+};
+$("pickGo").onclick = () => { if(!pickSel) return; buddy = pickSel; store.set("buddy", buddy); showMap(true); };
+
+function showMap(greet){
+  hush(); tok++;
+  $("levels").innerHTML = LEVELS.map((l,i) => {
+    const p = P(l.key), open = unlocked(i);
+    const stars = "★".repeat(p.best) + "☆".repeat(3-p.best);
+    return `<li><button class="lvl" type="button" data-i="${i}" ${open?"":"disabled"}>
+      <span class="ic">${open ? l.icon : "🔒"}</span><span class="n">Nivel ${i+1}</span><b>${l.name}</b>
+      <small>${open ? l.desc : "Gana la medalla anterior para abrirlo"}</small>
+      <span class="st"><span>${stars}</span><span>${p.medals ? "🏅 × "+p.medals : ""}</span></span></button></li>`;
+  }).join("");
+  show("map");
+  const next = LEVELS.findIndex((l,i) => unlocked(i) && !P(l.key).medals);
+  const t = `¡Hola! Soy ${NAME[buddy]}. ` + (next >= 0 ? `¿Jugamos ${LEVELS[next].name}?` : "¡Ya tienes todas las medallas! ¿Cuál jugamos?");
+  if(greet) say(t); else document.querySelector("#map .bubble").textContent = t;
+}
+$("levels").onclick = e => { const b = e.target.closest(".lvl"); if(b && !b.disabled){ actx(); startLevel(+b.dataset.i); } };
+$("mapBuddy").onclick = () => { actx(); showMap(true); };
+$("buddyBtn").onclick = () => { actx(); showPick(); };
+$("toMap").onclick = () => showMap(false);
+$("playBuddy").onclick = () => { actx(); if(lastLine) say(...lastLine); };
+function paintSound(){ $("soundBtn").textContent = soundOn ? "🔊" : "🔇"; $("soundBtn").setAttribute("aria-pressed", String(!soundOn)); }
+$("soundBtn").onclick = () => { soundOn = !soundOn; store.set("sound", soundOn); if(!soundOn) hush(); paintSound(); };
+
+/* ---------- Ejercicios ---------- */
+function pickTo(gen, ok){ for(let i=0;i<400;i++){ const r = gen(); if(ok(r)) return r; } return gen(); }
+function genBuild(lo, hi){ return {type:"build", t:R(lo,hi)}; }
+function genSuma(tier, big){
+  const a0 = big ? [100,800] : null;
+  const g = [
+    () => big ? {a:R(...a0), b:R(1,9)}   : {a:R(10,20), b:R(1,9)},
+    () => big ? {a:R(...a0), b:R(10,99)} : {a:R(10,70), b:R(10,29)},
+    () => big ? {a:R(...a0), b:R(10,99)} : {a:R(15,69), b:R(6,29)},
+  ][tier];
+  const carry = r => r.a%10 + r.b%10 >= 10, carryD = r => Math.floor(r.a/10)%10 + Math.floor(r.b/10)%10 >= 10;
+  const max = big ? 999 : 99;
+  const r = pickTo(g, r => r.a + r.b <= max && (tier < 2 ? !carry(r) && !carryD(r) : carry(r)));
+  return {type:"suma", a:r.a, b:r.b, ans:r.a + r.b};
+}
+function genResta(tier, big){
+  const g = [
+    () => big ? {a:R(100,900), b:R(1,9)}   : {a:R(12,29), b:R(1,9)},
+    () => big ? {a:R(100,900), b:R(10,99)} : {a:R(30,99), b:R(11,60)},
+    () => big ? {a:R(100,900), b:R(5,99)}  : {a:R(30,99), b:R(6,60)},
+  ][tier];
+  const bU = r => r.b%10 > r.a%10, bD = r => Math.floor(r.b/10)%10 > Math.floor(r.a/10)%10;
+  const r = pickTo(g, r => r.b < r.a - 1 && r.b > 0 && (tier < 2 ? !bU(r) && !bD(r) : bU(r)));
+  return {type:"resta", a:r.a, b:r.b, ans:r.a - r.b, borrow: tier === 2};
+}
+function genCien(tier){
+  if(tier < 2) return genBuild(...[[100,350],[100,999]][tier]);
+  return pickTo(() => genBuild(101,999), r => r.t%10 === 0 || Math.floor(r.t/10)%10 === 0);
+}
+function gen(key, tier){
+  switch(key){
+    case "junta": return genBuild(...[[2,10],[5,15],[10,20]][tier]);
+    case "arma":  return genBuild(...[[10,50],[20,99],[40,99]][tier]);
+    case "suma":  return genSuma(tier, false);
+    case "resta": return genResta(tier, false);
+    case "cien":  return genCien(tier);
+    case "reto":  { const k = (sess.i + R(0,2)) % 3; return k === 0 ? genCien(tier) : k === 1 ? genSuma(tier, true) : genResta(tier, true); }
+  }
+}
+
+function startLevel(i){
+  li = i; L = LEVELS[i]; sess = {i:0, first:0, res:[]}; tierMsg = "";
+  $("lvlName").textContent = `${L.icon} ${L.name}`;
+  show("play"); nextEx();
+}
+function nextEx(){
+  if(sess.i >= PER_SESSION) return finish();
+  tok++; busy = false; flags = {}; attempts = 0; removed = 0; revealed = false; lastAdded = null;
+  ex = gen(L.key, P(L.key).tier);
+  cnt = {c:0, d:0, u:0};
+  if(ex.type === "build") phase = "build";
+  else { cnt = dig(ex.a); phase = ex.type === "suma" ? "tray" : "quitar"; }
+  render();
+  const pre = tierMsg; tierMsg = "";
+  let text, spoken;
+  if(ex.type === "build"){
+    text = L.key === "junta" ? `¡Pon ${ex.t} cubitos azules!` : `¡Arma el ${ex.t}!`;
+    spoken = L.key === "junta" ? `Pon ${ex.t} cubitos.` : `Arma el ${ex.t}.`;
+  }else if(ex.type === "suma"){
+    text = `Tienes ${ex.a}. ¡Llegan ${ex.b} más! Toca «Júntalos».`;
+    spoken = `Tienes ${ex.a}. Llegan ${ex.b} más. ¡Júntalos!`;
+  }else{
+    text = `Tienes ${ex.a}. Toca bloques para quitar ${ex.b}.` + (ex.borrow ? " Si no te alcanzan los cubitos, toca una barra para romperla." : "");
+    spoken = `Tienes ${ex.a}. Quita ${ex.b}.` + (ex.borrow ? " Si no te alcanzan los cubitos, toca una barra para romperla." : "");
+  }
+  say(pre + text, pre + spoken);
+}
+
+const needJoin = () => ex.type !== "resta" && (cnt.u >= 10 || (L.cols.includes("c") && cnt.d >= 10));
+const showCount = () => ex.type === "build" || revealed || phase === "done";
+
+function blocksHTML(k, n, extra){
+  let h = "";
+  for(let i=0;i<n;i++){
+    const isNew = lastAdded && lastAdded.k === k && i >= n - lastAdded.n;
+    h += `<button class="blk ${k}${isNew?" new":""}" type="button" data-k="${k}" aria-label="${PLACE[k][0]}" ${extra||""}></button>`;
+  }
+  return h;
+}
+function render(){
+  // Tarea
+  if(ex.type === "build") $("task").innerHTML = L.key === "junta" ? `Pon <b>${ex.t}</b> cubitos` : `Arma el <b>${ex.t}</b>`;
+  else $("task").innerHTML = `${ex.a} ${ex.type==="suma"?"+":"−"} ${ex.b} = <b>${phase==="done"?ex.ans:"?"}</b>`;
+  // Bandeja de la suma
+  const tray = $("tray");
+  if(ex.type === "suma" && phase === "tray"){
+    const g = dig(ex.b);
+    tray.innerHTML = `<span class="lab">Llegan ${ex.b}:</span>` + ["c","d","u"].filter(k=>g[k]).map(k => `<span class="grp">${blocksHTML(k, g[k], 'tabindex="-1"')}</span>`).join("");
+    tray.hidden = false;
+  }else tray.hidden = true;
+  // Mesa
+  const w = {c:1.5, d:1.4, u:1};
+  $("mesa").style.gridTemplateColumns = L.cols.map(k => `minmax(0,${w[k]}fr)`).join(" ");
+  $("mesa").innerHTML = L.cols.map(k =>
+    `<div class="col ${k}" data-col="${k}"><div class="hd">${PLACE[k][2]} <em>${showCount() ? cnt[k] : "?"}</em></div><div class="bd">${blocksHTML(k, cnt[k])}</div></div>`).join("");
+  lastAdded = null;
+  // Botones
+  const c = [];
+  if(needJoin()){
+    const k = cnt.u >= 10 ? "u" : "d";
+    c.push(`<button class="act join glow" type="button" data-act="join" data-k="${k}">🤝 Juntar 10 ${k==="u"?"cubitos":"decenas"}</button>`);
+  }
+  if(phase === "build"){
+    const add = L.add.filter(k => L.cols.includes(k));
+    for(const k of ["c","d","u"]) if(add.includes(k)){
+      const full = k === "u" ? cnt.u >= 10 : k === "d" ? (L.cols.includes("c") ? cnt.d >= 10 : cnt.d >= 9) : cnt.c >= 9;
+      c.push(`<button class="act ${k}" type="button" data-act="add" data-k="${k}" ${full?"disabled":""}>+ <span class="blk ${k}"></span> ${PLACE[k][0][0].toUpperCase()+PLACE[k][0].slice(1)}</button>`);
+    }
+    c.push(`<button class="act ok" type="button" data-act="check" ${needJoin()?"disabled":""}>✅ ¡Listo!</button>`);
+  }
+  if(phase === "tray") c.push(`<button class="act join glow" type="button" data-act="merge">🤝 ¡Júntalos!</button>`);
+  if(phase === "quitar") c.push(`<span class="info">Quitaste <b>${removed}</b> de ${ex.b}</span>`);
+  $("controls").innerHTML = c.join("");
+  $("controls").hidden = !c.length;
+  // Opciones
+  $("opts").hidden = !(phase === "ask" || (phase === "done" && ex.type !== "build"));
+  // Progreso
+  $("dots").innerHTML = Array.from({length:PER_SESSION}, (_,i) => {
+    if(i < sess.res.length) return sess.res[i] ? `<i class="star">★</i>` : `<i class="done">✓</i>`;
+    return `<i class="${i===sess.i?"now":""}"></i>`;
+  }).join("");
+}
+
+function makeOpts(){
+  const a = ex.ans, big = a >= 100 ? 999 : 99;
+  const pick = arr => { const ok = arr.filter(v => v >= 0 && v <= Math.max(big, a+10) && v !== a); return ok[R(0, ok.length-1)]; };
+  let o1 = pick([a+10, a-10]), o2 = pick([a+1, a-1]);
+  if(o1 === undefined) o1 = a + 2;
+  if(o2 === undefined || o2 === o1) o2 = a + 3;
+  $("opts").innerHTML = shuffle([a, o1, o2]).map(v => `<button class="opt" type="button" data-v="${v}">${v}</button>`).join("");
+}
+function toAsk(pre){
+  phase = "ask"; makeOpts(); render();
+  const op = ex.type === "suma" ? "más" : "menos";
+  const t = ex.type === "suma" ? `¿Cuánto es ${ex.a} + ${ex.b}?` : `¿Cuántos quedan?`;
+  const s = ex.type === "suma" ? `¿Cuánto es ${ex.a} ${op} ${ex.b}?` : `¿Cuántos quedan? ¿Cuánto es ${ex.a} ${op} ${ex.b}?`;
+  say((pre||"") + t + " Cuenta los bloques.", (pre||"") + s);
+}
+
+/* Agregar, juntar, quitar y romper bloques */
+function addBlock(k){
+  cnt[k]++; lastAdded = {k, n:1}; sfx.pop(); render();
+  if(needJoin() && !flags.ten){
+    flags.ten = true;
+    say(cnt.u >= 10 ? "¡Tienes 10 cubitos! Toca «Juntar» para hacer una decena." : "¡Tienes 10 decenas! Júntalas para hacer una centena.");
+  }
+}
+function joinBlocks(k){
+  if(busy) return; busy = true;
+  const els = [...document.querySelectorAll(`.col.${k} .blk`)].slice(0, 10);
+  els.forEach(el => el.classList.add("gone"));
+  const t = tok;
+  setTimeout(() => {
+    if(t !== tok) return;
+    busy = false; cnt[k] -= 10; cnt[UP[k]]++; lastAdded = {k:UP[k], n:1}; sfx.join();
+    const msg = k === "u" ? "¡10 cubitos hacen una decena!" : "¡10 decenas hacen una centena!";
+    if(phase === "joined" && !needJoin()) return toAsk(msg + " ");
+    render(); say(msg);
+  }, 300);
+}
+function mergeTray(){
+  const g = dig(ex.b);
+  for(const k of ["c","d","u"]) cnt[k] += g[k];
+  lastAdded = null; phase = "joined"; sfx.join(); render();
+  // anima los bloques que llegaron
+  for(const k of ["c","d","u"]) if(g[k]){ const els = [...document.querySelectorAll(`.col.${k} .blk`)].slice(-g[k]); els.forEach(el => el.classList.add("new")); }
+  if(needJoin()) say(cnt.u >= 10 ? "¡Hay 10 cubitos o más! Toca «Juntar» para hacer una decena." : "¡Hay 10 decenas o más! Júntalas para hacer una centena.");
+  else toAsk();
+}
+function tapBlock(el){
+  const k = el.dataset.k;
+  if(busy) return;
+  if(phase === "build"){
+    busy = true; el.classList.add("gone"); sfx.off();
+    const t = tok; setTimeout(() => { if(t !== tok) return; busy = false; cnt[k]--; render(); }, 220);
+    return;
+  }
+  if(phase !== "quitar"){ el.classList.remove("wig"); void el.offsetWidth; el.classList.add("wig"); return; }
+  const rem = ex.b - removed, size = {u:1, d:10, c:100}[k];
+  busy = true; el.classList.add("gone");
+  const t = tok;
+  if(rem >= size){
+    sfx.off();
+    setTimeout(() => {
+      if(t !== tok) return;
+      busy = false; cnt[k]--; removed += size; render();
+      if(removed === ex.b) toAsk(`¡Muy bien, quitaste ${ex.b}! `);
+    }, 230);
+  }else{
+    sfx.brk();
+    const down = k === "c" ? "d" : "u";
+    setTimeout(() => {
+      if(t !== tok) return;
+      busy = false; cnt[k]--; cnt[down] += 10; lastAdded = {k:down, n:10}; render();
+      const key = "brk" + k;
+      if(!flags[key]){ flags[key] = true; say(k === "d" ? "¡Rompiste una decena en 10 cubitos!" : "¡Rompiste una centena en 10 decenas!"); }
+    }, 230);
+  }
+}
+
+/* Revisar respuestas: pistas sin castigo */
+function glowCols(keys){ for(const k of keys){ const c = document.querySelector(`.col.${k}`); if(c) c.classList.add("glow"); } }
+function checkBuild(){
+  if(val() === ex.t) return correct();
+  attempts++; sfx.soft();
+  const g = dig(ex.t), diff = L.cols.filter(k => g[k] !== cnt[k]);
+  if(attempts === 1){
+    const k = diff[0];
+    say(`¡Casi! El ${ex.t} tiene ${q(g[k],k)}. Tú tienes ${q(cnt[k],k)}.`);
+  }else{
+    say(`El ${ex.t} se arma con ${phrase(g, L.cols)}. ¡Tú puedes!`);
+  }
+  glowCols(diff);
+}
+function checkOpt(btn){
+  const v = +btn.dataset.v;
+  if(v === ex.ans){ btn.classList.add("right"); return correct(); }
+  attempts++; sfx.soft(); btn.disabled = true;
+  const order = L.cols.includes("c") && cnt.c ? "primero las centenas amarillas, luego las decenas rojas y al final los cubitos azules" : "primero las decenas rojas y luego los cubitos azules";
+  if(attempts === 1) say(`¡Casi! Cuenta los bloques: ${order}.`);
+  else{
+    revealed = true; render();
+    const b = document.querySelector(`.opt[data-v="${ex.ans}"]`); if(b) b.classList.add("glow");
+    say(`Mira: hay ${phrase(cnt, L.cols)}. ¡Eso es ${ex.ans}!`);
+  }
+}
+const PRAISE = ["¡Muy bien!","¡Excelente!","¡Eso es!","¡Súper!","¡Increíble!","¡Lo hiciste genial!"];
+function correct(){
+  const first = attempts === 0;
+  phase = "done"; sess.res.push(first); if(first) sess.first++; sess.i++;
+  adapt(first);
+  for(const b of document.querySelectorAll(".opt")) b.disabled = !b.classList.contains("right");
+  render(); sfx.ok();
+  const p = PRAISE[R(0, PRAISE.length-1)];
+  let text, spoken;
+  if(ex.type === "build"){ text = `${p} Eso es el ${ex.t}.`; spoken = text; }
+  else { const op = ex.type === "suma" ? "más" : "menos"; text = `${p} ${ex.a} ${ex.type==="suma"?"+":"−"} ${ex.b} = ${ex.ans}`; spoken = `${p} ${ex.a} ${op} ${ex.b} son ${ex.ans}.`; }
+  const t = tok;
+  busy = true;
+  say(text, spoken).then(() => setTimeout(() => { if(t === tok) nextEx(); }, 450));
+}
+function adapt(first){
+  const p = P(L.key);
+  if(first){
+    p.ok++; p.bad = 0;
+    if(p.ok >= 3 && p.tier < 2){ p.tier++; p.ok = 0; tierMsg = "¡Lo haces genial! Vamos con unos más difíciles. "; }
+  }else{
+    p.ok = 0;
+    if(attempts >= 2){ p.bad++; if(p.bad >= 2 && p.tier > 0){ p.tier--; p.bad = 0; tierMsg = "Vamos a practicar con unos más fáciles. "; } }
+  }
+  save();
+}
+function finish(){
+  tok++;
+  const p = P(L.key), stars = sess.first >= 8 ? 3 : sess.first >= 5 ? 2 : 1;
+  const wasLocked = li+1 < LEVELS.length && !unlocked(li+1);
+  p.medals++; p.best = Math.max(p.best, stars); save();
+  const nxt = LEVELS[li+1];
+  $("medalTitle").textContent = `¡Medalla de ${L.name}!`;
+  $("medalStars").textContent = "★".repeat(stars) + "☆".repeat(3-stars);
+  $("medalText").textContent = `Acertaste ${sess.first} de ${PER_SESSION} a la primera.` + (wasLocked ? ` ¡Abriste el nivel ${nxt.name}!` : "");
+  $("mNext").hidden = !nxt;
+  show("medal"); sfx.win();
+  say(`¡Lo lograste! Ganaste la medalla de ${L.name}.` + (wasLocked ? ` Ya puedes jugar ${nxt.name}.` : ""));
+}
+$("mAgain").onclick = () => startLevel(li);
+$("mNext").onclick = () => startLevel(li+1);
+$("mMap").onclick = () => showMap(true);
+
+$("mesa").onclick = e => { const b = e.target.closest(".blk"); if(b) tapBlock(b); };
+$("controls").onclick = e => {
+  const b = e.target.closest("button[data-act]"); if(!b || b.disabled || busy) return;
+  actx();
+  const a = b.dataset.act;
+  if(a === "add") addBlock(b.dataset.k);
+  else if(a === "join") joinBlocks(b.dataset.k);
+  else if(a === "check") checkBuild();
+  else if(a === "merge") mergeTray();
+};
+$("opts").onclick = e => { const b = e.target.closest(".opt"); if(b && !b.disabled && phase === "ask") checkOpt(b); };
+document.addEventListener("error", e => { if(e.target.tagName === "IMG") e.target.style.visibility = "hidden"; }, true);
+if("speechSynthesis" in window) speechSynthesis.getVoices();
+
+paintSound();
+if(buddy && NAME[buddy]) showMap(false); else { buddy = null; showPick(); }
+</script>
+</body>
+</html>
