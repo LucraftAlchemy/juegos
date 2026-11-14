@@ -1,0 +1,567 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memorama Pokémon</title>
+<meta name="theme-color" content="#F4F0FF">
+<link rel="icon" href="../pokedex/icon-180.png">
+<link rel="apple-touch-icon" href="../pokedex/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap">
+<link rel="stylesheet" href="../comun/juegos.css">
+<style>
+/* Pantallas: niveles (3, 6 o 12 pares) → elegir Pokémon → tablero → medalla y récord.
+   Cartas holográficas: capa arcoíris (color-dodge), brillitos y reflejo que siguen al dedo, al mouse o a la inclinación del iPad. */
+body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+body.playing{height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+main{flex:1;display:flex;flex-direction:column;width:100%;max-width:1200px;margin:0 auto;min-height:0;
+  padding:0 max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+main > section{flex:1;min-height:0}
+.big{font-size:clamp(26px,5vw,40px);text-align:center;margin:6px 0 2px;line-height:1.15}
+.sub{text-align:center;font-size:18px;color:var(--muted);margin:0 0 16px}
+
+/* ---------- Carta (frente) ---------- */
+.tcard{position:absolute;inset:0;border-radius:var(--rad);overflow:hidden;isolation:isolate;padding:calc(var(--cw)*.045);
+  background:linear-gradient(135deg,#fff8d6 0%,#e7bf55 22%,#fff1b0 45%,#c6952b 70%,#ffe8a3 100%);
+  box-shadow:0 calc(var(--cw)*.025) calc(var(--cw)*.07) rgba(20,8,50,.4)}
+.tc-in{position:relative;height:100%;border-radius:calc(var(--rad)*.6);display:flex;flex-direction:column;overflow:hidden;
+  background:radial-gradient(120% 70% at 50% 0%,rgba(255,255,255,.55),rgba(255,255,255,0) 60%),linear-gradient(165deg,var(--c1),var(--c2) 52%,var(--c3))}
+.tc-top{display:flex;justify-content:center;align-items:baseline;gap:4px;padding:5% 6% 0;color:#fff;font-weight:700;line-height:1.1;
+  text-shadow:0 1px 0 rgba(0,0,0,.45),0 0 3px rgba(0,0,0,.35)}
+.tc-name{font-size:calc(var(--cw)*.112);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tc-no{font-size:calc(var(--cw)*.056);opacity:.95;flex:none;white-space:nowrap}
+.tc-art{flex:1;min-height:0;position:relative;margin:4% 7% 3%;border-radius:calc(var(--cw)*.04);display:grid;place-items:center;overflow:hidden;
+  border:calc(var(--cw)*.014) solid rgba(255,255,255,.85);
+  background:radial-gradient(circle at 50% 46%,rgba(255,255,255,.98) 0,rgba(255,255,255,.55) 34%,rgba(255,255,255,0) 66%),
+    repeating-conic-gradient(from 0deg at 50% 46%,rgba(255,255,255,.22) 0 9deg,rgba(255,255,255,0) 9deg 18deg),var(--c2);
+  box-shadow:inset 0 0 calc(var(--cw)*.06) rgba(0,0,0,.25)}
+.tc-art img{width:94%;height:94%;object-fit:contain;filter:drop-shadow(0 calc(var(--cw)*.02) calc(var(--cw)*.025) rgba(0,0,0,.35));-webkit-user-drag:none;user-select:none}
+.tc-foot{display:flex;justify-content:space-between;align-items:center;gap:4px;padding:0 6% 5%;color:#fff;font-weight:700;font-size:calc(var(--cw)*.064)}
+.tc-type{background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:2px 7%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.tc-star{color:#fff3a6;text-shadow:0 0 4px rgba(255,200,0,.9);flex:none}
+.cmp .tc-foot{display:none}
+.tcard{container-type:inline-size}
+@container (max-width:150px){ .tc-no{display:none} .tc-foot{justify-content:center} }
+.cmp .tc-name{font-size:calc(var(--cw)*.13)}
+.cmp .tc-top{padding-top:6%}
+.cmp .tc-art{margin:4% 6% 7%}
+
+/* Capas holográficas */
+.tc-holo,.tc-spark,.tc-glare{position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+.tc-holo{z-index:2;mix-blend-mode:color-dodge;opacity:.42;filter:brightness(.72) contrast(1.6) saturate(1.35);
+  background-image:repeating-linear-gradient(118deg,#ff5f6d 0%,#ffc371 6%,#a8ff78 12%,#5ff5ff 18%,#6f8bff 24%,#d16bff 30%,#ff5f6d 36%);
+  background-size:300% 300%;background-position:var(--px,var(--gpx,50%)) var(--py,var(--gpy,50%));transition:opacity .3s}
+.tc-spark{z-index:3;mix-blend-mode:color-dodge;opacity:.55;
+  background-image:radial-gradient(circle,rgba(255,255,255,.95) 0 .7px,transparent 1.3px),radial-gradient(circle,rgba(255,255,255,.85) 0 .55px,transparent 1.1px),radial-gradient(circle,rgba(255,240,180,.9) 0 .9px,transparent 1.6px);
+  background-size:13px 17px,19px 23px,37px 31px;background-position:var(--px,var(--gpx,50%)) 0,0 var(--py,var(--gpy,50%)),var(--py,var(--gpy,50%)) var(--px,var(--gpx,50%));
+  -webkit-mask-image:radial-gradient(farthest-corner circle at var(--mx,var(--gmx,50%)) var(--my,var(--gmy,40%)),#000 0,rgba(0,0,0,.35) 55%,rgba(0,0,0,.15) 100%);
+  mask-image:radial-gradient(farthest-corner circle at var(--mx,var(--gmx,50%)) var(--my,var(--gmy,40%)),#000 0,rgba(0,0,0,.35) 55%,rgba(0,0,0,.15) 100%)}
+.tc-glare{z-index:4;mix-blend-mode:overlay;opacity:.38;transition:opacity .3s;
+  background:radial-gradient(farthest-corner circle at var(--mx,var(--gmx,28%)) var(--my,var(--gmy,18%)),rgba(255,255,255,.95) 0%,rgba(255,255,255,.5) 26%,rgba(0,0,0,.32) 92%)}
+.hover .tc-holo,.gyro .tc-holo{opacity:.6}
+.hover .tc-glare,.gyro .tc-glare{opacity:.75}
+@keyframes shimmer{0%{background-position:0% 15%}50%{background-position:85% 55%}100%{background-position:35% 100%}}
+@keyframes sparkle{0%{background-position:0 0,0 0,0 0}100%{background-position:52px 34px,-38px 46px,74px -62px}}
+.solo:not(.hover) .tc-holo,.mcard.up:not(.hover) .tc-holo{animation:shimmer 7s ease-in-out infinite alternate}
+.solo:not(.hover) .tc-spark,.mcard.up:not(.hover) .tc-spark{animation:sparkle 9s linear infinite}
+.gyro .hc .tc-holo,.gyro .hc .tc-spark{animation:none}
+
+/* ---------- Carta (reverso, diseño propio) ---------- */
+.tback{position:absolute;inset:0;border-radius:var(--rad);overflow:hidden;isolation:isolate;border:calc(var(--cw)*.045) solid #f5cd5a;
+  background:radial-gradient(circle at 50% 50%,rgba(255,226,122,.45) 0,rgba(255,226,122,0) 42%),
+    repeating-conic-gradient(from 0deg at 50% 50%,#3a1f8f 0 9deg,#4f2db8 9deg 18deg);
+  box-shadow:0 calc(var(--cw)*.025) calc(var(--cw)*.07) rgba(20,8,50,.4),inset 0 0 0 calc(var(--cw)*.012) #fff6c9}
+.tback::before{content:"";position:absolute;inset:7%;border-radius:calc(var(--rad)*.6);border:calc(var(--cw)*.012) dashed rgba(255,233,168,.6)}
+.tb-emb{position:absolute;left:50%;top:47%;width:46%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 35% 30%,#fff9d6,#f2b705 58%,#a87400);box-shadow:0 0 0 calc(var(--cw)*.022) #fff4c4,0 0 calc(var(--cw)*.16) rgba(255,215,106,.85)}
+.tb-emb b{font-size:calc(var(--cw)*.3);line-height:1;color:#3a1f8f;text-shadow:0 2px 0 rgba(255,255,255,.6)}
+.tb-word{position:absolute;bottom:9%;left:0;right:0;text-align:center;color:#ffe9a8;font-size:calc(var(--cw)*.075);letter-spacing:.18em;font-weight:700;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.cmp .tb-word{display:none}
+.tback .tc-holo{opacity:.25}
+.tback .tc-glare{opacity:.3}
+
+/* ---------- Niveles ---------- */
+.lvls{list-style:none;padding:0;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;max-width:980px;width:100%}
+.lvl{width:100%;height:100%;background:#fff;border:3px solid var(--lila);border-radius:26px;padding:14px 16px;cursor:pointer;display:flex;align-items:center;gap:14px;text-align:left;transition:transform .15s,box-shadow .15s}
+.lvl:hover{transform:translateY(-3px);box-shadow:0 10px 24px rgba(120,80,200,.18)}
+.lvl .stk{position:relative;flex:none;width:76px;height:84px}
+.lvl .stk i{position:absolute;width:48px;height:67px;top:8px;left:14px;border-radius:7px;border:3px solid #f5cd5a;
+  background:repeating-conic-gradient(from 0deg at 50% 50%,#3a1f8f 0 12deg,#4f2db8 12deg 24deg);box-shadow:0 3px 6px rgba(0,0,0,.25)}
+.lvl .stk i:nth-child(1){transform:rotate(-14deg) translateX(-10px)}
+.lvl .stk i:nth-child(3){transform:rotate(14deg) translateX(10px)}
+.lvl .tx{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.15}
+.lvl .tx small{color:var(--muted);font-weight:700;font-size:15px}
+.lvl .tx b{font-size:28px}
+.lvl .tx em{font-style:normal;color:var(--muted);font-size:16px}
+.lvl .md{flex:none}
+.showcase{position:relative;--cw:clamp(100px,17vh,156px);height:calc(var(--cw)*1.4 + 40px);margin:18px auto 4px;width:100%;max-width:520px}
+.showcase .hc{position:absolute;left:50%;bottom:6px;width:var(--cw);height:calc(var(--cw)*1.4);--rad:calc(var(--cw)*.07);transform-origin:50% 120%;cursor:pointer}
+.showcase .hc:nth-child(1){transform:translateX(-50%) rotate(-16deg) translateX(-42%)}
+.showcase .hc:nth-child(2){transform:translateX(-50%) translateY(-6%);z-index:2}
+.showcase .hc:nth-child(3){transform:translateX(-50%) rotate(16deg) translateX(42%)}
+.solo > .tcard{transform:perspective(calc(var(--cw)*7)) rotateX(var(--rx,var(--grx,0deg))) rotateY(var(--ry,var(--gry,0deg)));transition:transform .45s ease}
+.solo.hover > .tcard{transition-duration:.08s}
+.tip{text-align:center;color:var(--muted);font-size:16px;margin:4px 0 0}
+
+/* ---------- Elegir Pokémon ---------- */
+.phead{display:flex;align-items:center;gap:10px;margin:2px 0 10px}
+.navb{flex:none;font:700 18px "Mali",sans-serif;border:3px solid var(--lila);background:#fff;border-radius:14px;min-width:48px;height:48px;padding:0 12px;cursor:pointer}
+.ptitle{flex:1;min-width:0}
+.ptitle h2{margin:0;font-size:clamp(22px,4.4vw,32px);line-height:1.1}
+.ptitle h2 b{color:var(--red)}
+.ptitle p{margin:2px 0 0;color:var(--muted);font-size:16px;min-height:21px}
+.ptitle p.warn{color:var(--red);font-weight:700}
+.count{flex:none;font-size:clamp(24px,4.5vw,34px);font-weight:700;background:#fff;border:3px solid var(--lila);border-radius:18px;padding:4px 14px;line-height:1.2}
+.count.full{border-color:var(--ok);color:var(--ok)}
+.pgrid{list-style:none;padding:4px 2px;margin:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(96px,26vw,140px),1fr));gap:12px}
+.pk{position:relative;width:100%;aspect-ratio:5/7;border:0;padding:0;background:none;cursor:pointer;--rad:calc(var(--cw)*.07);transition:transform .2s,opacity .2s}
+.pk.sel{transform:translateY(-4px)}
+.pk.sel .tcard{box-shadow:0 0 0 4px #fff,0 0 0 8px var(--ok),0 8px 18px rgba(46,158,79,.45)}
+.pgrid.full .pk:not(.sel){opacity:.5}
+.pk .badge{position:absolute;z-index:6;top:-8px;right:-8px;width:34px;height:34px;border-radius:50%;background:var(--ok);color:#fff;font-weight:700;font-size:18px;display:none;place-items:center;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.pk.sel .badge{display:grid;animation:pop .35s ease}
+.pk.no{animation:wig .35s}
+.pfoot{position:sticky;bottom:0;z-index:8;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 -4px;padding:22px 4px calc(6px + env(safe-area-inset-bottom,0px));
+  background:linear-gradient(rgba(244,240,255,0),var(--bg) 20px)}
+#tiltBtn[aria-pressed="true"]{background:#fff7d6;border-color:var(--gold);box-shadow:0 5px 0 var(--gold)}
+
+/* ---------- Tablero ---------- */
+#game{display:flex;flex-direction:column;gap:8px}
+.hud{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hchip{background:#fff;border:3px solid var(--lila);border-radius:999px;padding:4px 12px;font-size:clamp(16px,2.6vw,20px);font-weight:700;white-space:nowrap}
+.hchip.pts{margin-left:auto;background:#fff7d6;border-color:#f5cd5a}
+.hchip b{font-variant-numeric:tabular-nums}
+.mat{flex:1;min-height:0;position:relative;border-radius:26px;display:grid;place-items:center;overflow:hidden;
+  background:radial-gradient(circle at 50% -10%,#6a3fd6 0,#3a1f8f 45%,#1f1246 100%);box-shadow:inset 0 0 0 3px rgba(255,255,255,.12),inset 0 10px 40px rgba(0,0,0,.35)}
+.mat::before{content:"";position:absolute;inset:0;opacity:.18;pointer-events:none;
+  background:radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.6px) 0 0/34px 34px,radial-gradient(circle,rgba(255,255,255,.6) 0 1px,transparent 1.6px) 17px 17px/34px 34px}
+.board{position:relative;display:grid;gap:var(--gap,10px);justify-content:center;align-content:center}
+.mcard{position:relative;width:var(--cw);height:calc(var(--cw)*1.4);border:0;padding:0;margin:0;background:none;cursor:pointer;--rad:calc(var(--cw)*.07);outline:none}
+.mcard:focus-visible .face{outline:4px solid var(--gold);outline-offset:3px;border-radius:var(--rad)}
+.mcard .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;will-change:transform;
+  transform:perspective(calc(var(--cw)*7)) rotateX(var(--rx,var(--grx,0deg))) rotateY(calc(var(--ry,var(--gry,0deg)) + var(--f)));
+  transition:transform .5s cubic-bezier(.3,1.25,.5,1)}
+.mcard .face.back{--f:0deg}
+.mcard .face.front{--f:180deg}
+.mcard.up .face.back{--f:-180deg}
+.mcard.up .face.front{--f:0deg}
+.mcard.hover .face{transition-duration:.08s}
+.mcard.flipping .face{transition-duration:.5s}
+.mcard.ok .tcard{box-shadow:0 0 0 calc(var(--cw)*.022) rgba(255,255,255,.9),0 0 calc(var(--cw)*.22) var(--c2)}
+.mcard.ok .tc-holo{opacity:.62}
+.mcard.ok .tc-glare{opacity:.6}
+.mcard.deal{animation:deal .5s cubic-bezier(.2,1.2,.4,1) backwards;animation-delay:var(--d,0ms)}
+.mcard.pop{animation:popc .55s ease}
+.mcard.bad{animation:shake .42s}
+@keyframes deal{from{transform:translateY(-40vh) rotate(-25deg) scale(.4);opacity:0}}
+@keyframes popc{40%{transform:scale(1.12) translateY(-4%)}}
+@keyframes shake{20%{transform:translateX(-6%) rotate(-3deg)}50%{transform:translateX(5%) rotate(3deg)}80%{transform:translateX(-3%)}}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.12);opacity:1}100%{transform:none}}
+@keyframes wig{25%{transform:rotate(-5deg)}75%{transform:rotate(5deg)}}
+
+/* Efectos al encontrar un par */
+.fx{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.spk{position:absolute;width:var(--s);height:var(--s);margin:calc(var(--s)/-2) 0 0 calc(var(--s)/-2);background:var(--c);animation:spk .8s cubic-bezier(.2,.8,.4,1) forwards;
+  clip-path:polygon(50% 0,61% 39%,100% 50%,61% 61%,50% 100%,39% 61%,0 50%,39% 39%)}
+@keyframes spk{0%{transform:translate(0,0) scale(.4) rotate(0);opacity:1}100%{transform:translate(var(--x),var(--y)) scale(1) rotate(160deg);opacity:0}}
+.flt{position:absolute;transform:translate(-50%,-50%);font-weight:700;font-size:clamp(22px,4vw,34px);color:#ffe27a;white-space:nowrap;
+  text-shadow:0 2px 0 #7a4a00,0 0 10px rgba(0,0,0,.45);animation:flt 1.1s ease-out forwards}
+.flt.combo{color:#fff;font-size:clamp(20px,3.4vw,28px);text-shadow:0 2px 0 #b0006a,0 0 10px rgba(255,0,140,.6)}
+@keyframes flt{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}20%{opacity:1;transform:translate(-50%,-60%) scale(1.1)}100%{opacity:0;transform:translate(-50%,-160%) scale(1)}}
+
+/* ---------- Medalla ---------- */
+#win{display:flex;justify-content:center;align-items:flex-start}
+.wpanel{position:relative;background:#fff;border:3px solid var(--lila);border-radius:30px;padding:18px 16px 18px;text-align:center;width:min(640px,100%);margin:8px auto 0}
+.wmed{display:flex;justify-content:center;margin-top:-4px}
+.wmed .jmed{animation:medal .8s cubic-bezier(.2,1.4,.4,1)}
+@keyframes medal{0%{transform:scale(.2) rotate(-30deg);opacity:0}100%{transform:none;opacity:1}}
+.wpanel h2{font-size:clamp(28px,6vw,40px);margin:2px 0 6px;line-height:1.1}
+.fan{position:relative;height:calc(var(--cw)*1.55);--cw:clamp(78px,15vw,104px);margin:6px auto 4px;width:100%}
+.fan .hc{position:absolute;left:50%;bottom:0;width:var(--cw);height:calc(var(--cw)*1.4);--rad:calc(var(--cw)*.07);transform-origin:50% 140%;
+  transform:translateX(-50%) rotate(var(--a)) ;animation:fanin .6s cubic-bezier(.2,1.3,.4,1) backwards;animation-delay:var(--dl)}
+@keyframes fanin{from{transform:translateX(-50%) rotate(0deg) translateY(30%);opacity:0}}
+.wlist{list-style:none;margin:8px auto;padding:0;max-width:420px;display:flex;flex-direction:column;gap:4px}
+.wlist li{display:flex;justify-content:space-between;gap:10px;font-size:18px;background:#faf8ff;border-radius:12px;padding:6px 12px}
+.wlist li b{color:#7a5600}
+.wtotal{font-size:clamp(26px,5vw,34px);font-weight:700;margin:6px 0 10px}
+.wtotal b{color:#b07d00}
+.wname{background:#faf8ff;border:3px dashed var(--lila2);border-radius:20px;padding:12px;margin:0 0 14px}
+.wbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.credits{text-align:center;color:#8a7fa3;font-size:12px;margin:18px 0 0}
+
+@media (max-width:600px){
+  .wide{display:none}
+  .pfoot .jbtn{font-size:17px;min-height:48px;padding:8px 14px}
+  .lvl .tx b{font-size:24px}
+  .hchip{padding:3px 9px}
+  .navb{height:44px;min-width:44px}
+  .wlist li{font-size:16px}
+}
+@media (max-height:520px) and (orientation:landscape){ .showcase{display:none} }
+@media (prefers-reduced-motion:reduce){ .mcard .face{transition:none} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="home" href="../" aria-label="Regresar a los juegos">🏠</a>
+  <h1><span class="r">M</span>emorama<span class="wide"> Pokémon</span></h1>
+  <button class="pill" id="recBtn" type="button" aria-label="Récords">🏆</button>
+  <button class="pill" id="codeBtn" type="button" aria-label="Código de guardado">💾</button>
+  <button class="pill" id="soundBtn" type="button">🔊</button>
+</header>
+
+<main>
+  <section id="menu">
+    <h2 class="big">¡Encuentra los pares! 🃏</h2>
+    <p class="sub">Elige cuántos pares quieres jugar</p>
+    <ul class="lvls" id="lvls"></ul>
+    <div class="showcase" id="showcase" aria-hidden="true"></div>
+    <p class="tip" id="tip">Pasa el dedo sobre las cartas para verlas brillar ✨</p>
+  </section>
+
+  <section id="pick" hidden>
+    <div class="phead">
+      <button class="navb" id="pickBack" type="button" aria-label="Regresar a los niveles">◀</button>
+      <div class="ptitle"><h2>Elige <b id="need">3</b> Pokémon</h2><p id="pickMsg">Tócalos para escucharlos 🔊</p></div>
+      <div class="count" id="count"><b id="cnt">0</b>/<span id="cntN">3</span></div>
+    </div>
+    <ul class="pgrid" id="pgrid"></ul>
+    <div class="pfoot">
+      <button class="jbtn light" id="randBtn" type="button">🎲 Al azar</button>
+      <button class="jbtn light" id="tiltBtn" type="button" aria-pressed="false" hidden>📱 Mover cartas</button>
+      <button class="jbtn ok" id="goBtn" type="button" disabled>¡A jugar! ▶</button>
+    </div>
+  </section>
+
+  <section id="game" hidden>
+    <div class="hud">
+      <button class="navb" id="quitBtn" type="button" aria-label="Salir del juego">◀</button>
+      <span class="hchip">🃏 <b id="hPairs">0/3</b></span>
+      <span class="hchip">👆 <b id="hMoves">0</b></span>
+      <span class="hchip pts">⭐ <b id="hPts">0</b></span>
+    </div>
+    <div class="mat" id="mat"><div class="board" id="board"></div></div>
+  </section>
+
+  <section id="win" hidden>
+    <div class="wpanel">
+      <div class="wmed" id="wMed"></div>
+      <h2 id="wTitle"></h2>
+      <div class="fan" id="fan"></div>
+      <ul class="wlist" id="wList"></ul>
+      <div class="wtotal">⭐ <b id="wTotal">0</b> puntos</div>
+      <div class="wname" id="wName"></div>
+      <div class="wbtns">
+        <button class="jbtn ok" id="againBtn" type="button">🔁 Otra vez</button>
+        <button class="jbtn blue" id="nextBtn" type="button">Más pares ▶</button>
+        <button class="jbtn purple" id="otherBtn" type="button">🃏 Otros Pokémon</button>
+      </div>
+    </div>
+  </section>
+</main>
+<div class="fx" id="fx" aria-hidden="true"></div>
+
+<script src="../comun/juegos.js"></script>
+<script>
+"use strict";
+const LV = [{n:3}, {n:6}, {n:12}];
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const shuffle = a => { for(let i=a.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+let lvl = 0, sel = [], deck = [], first = null, pend = null, lock = false;
+let moves = 0, pairs = 0, combo = 0, pts = 0, comboPts = 0, bestCombo = 0;
+
+/* ---------- Cartas ---------- */
+function front(m){
+  const t = J.TIPOS[m.t[0]];
+  return `<div class="tcard" style="--c1:${t[3]};--c2:${t[1]};--c3:${t[4]}">
+    <div class="tc-in">
+      <div class="tc-top"><span class="tc-name">${m.n}</span></div>
+      <div class="tc-art"><img src="${J.ART(m.id)}" alt="" draggable="false"></div>
+      <div class="tc-foot"><span class="tc-type">${t[2]} ${t[0]}</span><span class="tc-no">Nº ${String(m.id).padStart(3,"0")} <span class="tc-star">★</span></span></div>
+    </div>
+    <span class="tc-holo"></span><span class="tc-spark"></span><span class="tc-glare"></span>
+  </div>`;
+}
+const BACK = `<div class="tback"><div class="tb-emb"><b>?</b></div><div class="tb-word">LUCRAFT</div><span class="tc-holo"></span><span class="tc-glare"></span></div>`;
+
+/* Brillo que sigue al dedo o al mouse */
+let tiltEl = null, tiltT = 0;
+function tiltOn(el, e){
+  if(el.classList.contains("flipping")) return;
+  const r = el.getBoundingClientRect(); if(!r.width) return;
+  const x = clamp((e.clientX - r.left) / r.width, 0, 1), y = clamp((e.clientY - r.top) / r.height, 0, 1), s = el.style;
+  s.setProperty("--rx", ((.5 - y) * 22).toFixed(1) + "deg"); s.setProperty("--ry", ((x - .5) * 26).toFixed(1) + "deg");
+  s.setProperty("--px", (12 + x * 76).toFixed(1) + "%"); s.setProperty("--py", (12 + y * 76).toFixed(1) + "%");
+  s.setProperty("--mx", (x * 100).toFixed(1) + "%"); s.setProperty("--my", (y * 100).toFixed(1) + "%");
+  el.classList.add("hover");
+}
+function tiltOff(el){
+  if(!el) return;
+  for(const k of ["--rx","--ry","--px","--py","--mx","--my"]) el.style.removeProperty(k);
+  el.classList.remove("hover");
+}
+document.addEventListener("pointermove", e => {
+  const el = e.target.closest && e.target.closest(".hc");
+  if(el !== tiltEl){ tiltOff(tiltEl); tiltEl = el; }
+  clearTimeout(tiltT);
+  if(el) tiltOn(el, e);
+}, {passive:true});
+const endTilt = () => { clearTimeout(tiltT); tiltT = setTimeout(() => { tiltOff(tiltEl); tiltEl = null; }, 380); };
+document.addEventListener("pointerup", e => { if(e.pointerType !== "mouse") endTilt(); }, {passive:true});
+document.addEventListener("pointercancel", endTilt, {passive:true});
+document.documentElement.addEventListener("pointerleave", endTilt);
+
+/* Inclinar el iPad o el celular para que brillen todas las cartas */
+const G = {tx:0, ty:0, x:0, y:0, raf:0};
+function gyroTick(){
+  G.raf = 0; G.x += (G.tx - G.x) * .22; G.y += (G.ty - G.y) * .22;
+  const s = document.documentElement.style;
+  s.setProperty("--gry", (G.x * 16).toFixed(2) + "deg"); s.setProperty("--grx", (-G.y * 12).toFixed(2) + "deg");
+  s.setProperty("--gpx", (50 + G.x * 46).toFixed(1) + "%"); s.setProperty("--gpy", (50 + G.y * 46).toFixed(1) + "%");
+  s.setProperty("--gmx", (50 + G.x * 55).toFixed(1) + "%"); s.setProperty("--gmy", (40 + G.y * 55).toFixed(1) + "%");
+  if(Math.abs(G.tx - G.x) + Math.abs(G.ty - G.y) > .003) G.raf = requestAnimationFrame(gyroTick);
+}
+async function setGyro(on){
+  const b = $("tiltBtn");
+  if(on){
+    const ok = await J.gyro.start((dx, dy) => { G.tx = dx; G.ty = dy; if(!G.raf) G.raf = requestAnimationFrame(gyroTick); });
+    if(!ok){ J.toast("No se pudo usar el movimiento del iPad"); on = false; }
+  }else J.gyro.stop();
+  document.body.classList.toggle("gyro", on);
+  if(!on) for(const k of ["--grx","--gry","--gpx","--gpy","--gmx","--gmy"]) document.documentElement.style.removeProperty(k);
+  b.setAttribute("aria-pressed", String(on)); b.textContent = on ? "📱 Moviendo ✨" : "📱 Mover cartas";
+  J.pref("gyro", on);
+}
+
+/* ---------- Pantallas ---------- */
+function show(id){
+  for(const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
+  document.body.classList.toggle("playing", id === "game");
+  window.scrollTo(0, 0);
+}
+
+function paintMenu(){
+  $("lvls").innerHTML = LV.map((l,i) => `<li><button class="lvl" type="button" data-l="${i}">
+    <span class="stk" aria-hidden="true"><i></i><i></i><i></i></span>
+    <span class="tx"><small>Nivel ${i+1}</small><b>${l.n} pares</b><em>${l.n*2} cartas</em></span>
+    <span class="md" title="${J.medalla("mem", i) ? "Medalla de " + J.MEDALLAS[J.medalla("mem", i)] : "Sin medalla todavía"}">${J.medallaSVG(J.medalla("mem", i), 44)}</span></button></li>`).join("");
+  const three = shuffle(J.MONS.slice()).slice(0, 3);
+  $("showcase").innerHTML = three.map(m => `<div class="hc solo" data-id="${m.id}">${front(m)}</div>`).join("");
+  $("tip").textContent = matchMedia("(hover: hover)").matches ? "Pasa el mouse sobre las cartas para verlas brillar ✨" : "Pasa el dedo sobre las cartas para verlas brillar ✨";
+}
+function showMenu(){ J.hush(); clearPend(); paintMenu(); show("menu"); }
+$("lvls").onclick = e => { const b = e.target.closest(".lvl"); if(!b) return; J.actx(); J.sfx.tap(); lvl = +b.dataset.l; showPick(); };
+$("showcase").onclick = e => { const c = e.target.closest(".hc"); if(c){ J.actx(); J.cry(+c.dataset.id); burst(c); } };
+
+/* Elegir Pokémon */
+function showPick(keep){
+  const N = LV[lvl].n;
+  if(!keep){
+    const saved = J.pref("memSel" + lvl);
+    sel = Array.isArray(saved) ? saved.filter(id => J.BY[id]).slice(0, N) : [];
+  }
+  $("need").textContent = N; $("cntN").textContent = N;
+  $("pgrid").innerHTML = J.MONS.map(m => `<li><button class="pk hc solo" type="button" data-id="${m.id}" aria-label="${m.n}">${front(m)}<span class="badge"></span></button></li>`).join("");
+  $("tiltBtn").hidden = !J.gyro.supported();
+  show("pick"); sizePick(); paintPick();
+  $("pickMsg").className = ""; $("pickMsg").textContent = N === 12 ? "¡Elige 12 de tus 15 favoritos! 🔊" : "Tócalos para escucharlos 🔊";
+}
+function sizePick(){
+  const b = document.querySelector(".pk"); if(!b) return;
+  $("pgrid").style.setProperty("--cw", b.getBoundingClientRect().width + "px");
+}
+function paintPick(){
+  const N = LV[lvl].n;
+  for(const b of document.querySelectorAll(".pk")){
+    const i = sel.indexOf(+b.dataset.id);
+    b.classList.toggle("sel", i >= 0); b.setAttribute("aria-pressed", String(i >= 0));
+    b.querySelector(".badge").textContent = i >= 0 ? i + 1 : "";
+  }
+  $("cnt").textContent = sel.length;
+  $("count").classList.toggle("full", sel.length === N);
+  $("pgrid").classList.toggle("full", sel.length === N);
+  $("goBtn").disabled = sel.length !== N;
+}
+$("pgrid").onclick = e => {
+  const b = e.target.closest(".pk"); if(!b) return;
+  J.actx();
+  const id = +b.dataset.id, N = LV[lvl].n, i = sel.indexOf(id), msg = $("pickMsg");
+  if(i >= 0){ sel.splice(i, 1); J.sfx.tap(); msg.className = ""; msg.textContent = `Quitaste a ${J.BY[id].n}`; }
+  else if(sel.length >= N){
+    b.classList.remove("no"); void b.offsetWidth; b.classList.add("no"); J.sfx.no();
+    msg.className = "warn"; msg.textContent = `¡Ya tienes ${N}! Toca uno elegido para quitarlo.`;
+    return;
+  }else{
+    sel.push(id); J.sfx.flip(); J.cry(id); msg.className = "";
+    msg.textContent = sel.length === N ? "¡Listo! Toca «¡A jugar!» ▶" : `¡${J.BY[id].n}! Te faltan ${N - sel.length}`;
+  }
+  paintPick();
+};
+$("randBtn").onclick = () => {
+  J.actx(); const N = LV[lvl].n;
+  if(sel.length >= N) sel = [];
+  const rest = shuffle(J.MONS.map(m => m.id).filter(id => !sel.includes(id)));
+  while(sel.length < N) sel.push(rest.pop());
+  J.sfx.combo(2); paintPick();
+  $("pickMsg").className = ""; $("pickMsg").textContent = "¡Listo! Toca «¡A jugar!» ▶";
+};
+$("pickBack").onclick = () => { J.sfx.tap(); showMenu(); };
+$("tiltBtn").onclick = () => setGyro($("tiltBtn").getAttribute("aria-pressed") !== "true");
+$("goBtn").onclick = () => {
+  if(sel.length !== LV[lvl].n) return;
+  J.actx();
+  if(J.pref("gyro") && J.gyro.supported() && !J.gyro.on) setGyro(true);
+  startGame();
+};
+
+/* ---------- Juego ---------- */
+function startGame(){
+  J.pref("memSel" + lvl, sel.slice());
+  clearPend();
+  deck = shuffle(sel.flatMap(id => [id, id]));
+  moves = pairs = combo = pts = comboPts = bestCombo = 0; first = null; lock = false;
+  $("board").innerHTML = deck.map((id,i) => `<button class="mcard hc deal" type="button" data-i="${i}" style="--d:${i*40}ms" aria-label="Carta boca abajo">
+    <div class="face back">${BACK}</div><div class="face front">${front(J.BY[id])}</div></button>`).join("");
+  show("game"); layout(); hud();
+  deck.forEach((_, i) => setTimeout(() => J.tone(500 + (i % 6) * 60, 0, .05, "triangle", .04), i*40));
+  setTimeout(() => { for(const c of document.querySelectorAll(".mcard.deal")) c.classList.remove("deal"); }, deck.length*40 + 600);
+}
+function layout(){
+  if($("game").hidden) return;
+  const r = $("mat").getBoundingClientRect(), n = deck.length;
+  const pad = Math.max(10, Math.min(22, r.width * .02)), W = r.width - pad*2, H = r.height - pad*2;
+  let best = null;
+  for(let c = 1; c <= n; c++){
+    if(n % c) continue;
+    const rows = n / c, gap = clamp(Math.min(W, H) / 45, 6, 16);
+    const cw = Math.min((W - gap*(c - 1)) / c, (H - gap*(rows - 1)) / rows / 1.4);
+    if(!best || cw > best.cw) best = {c, cw, gap};
+  }
+  const cw = Math.floor(Math.min(best.cw, 200));
+  const b = $("board");
+  b.style.gridTemplateColumns = `repeat(${best.c}, ${cw}px)`;
+  b.style.setProperty("--cw", cw + "px"); b.style.setProperty("--gap", best.gap + "px");
+  b.classList.toggle("cmp", cw < 96);
+}
+window.addEventListener("resize", () => { layout(); sizePick(); });
+function hud(){
+  $("hPairs").textContent = `${pairs}/${LV[lvl].n}`;
+  $("hMoves").textContent = moves;
+  $("hPts").textContent = J.fmt(pts);
+}
+function flip(c, up){
+  c.classList.add("flipping"); tiltOff(c);
+  c.classList.toggle("up", up);
+  c.setAttribute("aria-label", up ? J.BY[deck[c.dataset.i]].n : "Carta boca abajo");
+  clearTimeout(c._ft); c._ft = setTimeout(() => c.classList.remove("flipping"), 560);
+}
+function clearPend(){ if(pend){ clearTimeout(pend.t); clearTimeout(pend.t2); pend = null; } }
+function resolveMismatch(){
+  if(!pend) return;
+  const {f, s} = pend; clearPend();
+  for(const c of [f, s]){ c.classList.remove("bad"); flip(c, false); }
+}
+$("board").addEventListener("click", e => {
+  const c = e.target.closest(".mcard"); if(!c) return;
+  J.actx();
+  const id = deck[c.dataset.i];
+  if(c.classList.contains("ok")){ J.cry(id); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); return; }
+  if(c.classList.contains("up") && !pend) return;
+  if(pend){ if(c === pend.f || c === pend.s) return; resolveMismatch(); }
+  if(lock) return;
+  flip(c, true); J.sfx.flip(); J.cry(id);
+  if(!first){ first = c; return; }
+  const f = first; first = null; moves++; hud();
+  if(deck[f.dataset.i] === id){
+    lock = true;
+    setTimeout(() => matched(f, c), 420);
+  }else{
+    combo = 0;
+    pend = {f, s:c,
+      t2: setTimeout(() => { for(const x of [f, c]){ x.classList.remove("bad"); void x.offsetWidth; x.classList.add("bad"); } J.sfx.no(); }, 650),
+      t: setTimeout(resolveMismatch, 1250)};
+  }
+});
+function matched(f, s){
+  lock = false;
+  pairs++; combo++; bestCombo = Math.max(bestCombo, combo);
+  const extra = combo > 1 ? 50 * (combo - 1) : 0, gain = 100 + extra;
+  comboPts += extra; pts += gain; hud();
+  for(const c of [f, s]){ c.classList.add("ok"); c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); burst(c); }
+  const a = f.getBoundingClientRect(), b = s.getBoundingClientRect();
+  const x = (a.left + a.right + b.left + b.right) / 4, y = (a.top + b.top) / 2 + a.height * .35;
+  floatText(x, y, "+" + gain);
+  if(combo > 1){ floatText(x, y + a.height * .45, `¡Combo x${combo}! 🔥`, "combo"); J.sfx.combo(combo); } else J.sfx.ok();
+  if(pairs === LV[lvl].n) setTimeout(finish, 800);
+}
+function burst(el){
+  const r = el.getBoundingClientRect(), fx = $("fx"), cols = ["#fff6a8","#ffffff","#ffd23f","#9ff7ff","#ffb3f0"];
+  for(let i = 0; i < 12; i++){
+    const s = document.createElement("i"), a = (i / 12) * Math.PI * 2 + Math.random() * .4, d = r.width * (.55 + Math.random() * .5);
+    s.className = "spk";
+    s.style.left = (r.left + r.width / 2) + "px"; s.style.top = (r.top + r.height / 2) + "px";
+    s.style.setProperty("--x", Math.cos(a) * d + "px"); s.style.setProperty("--y", Math.sin(a) * d + "px");
+    s.style.setProperty("--s", (8 + Math.random() * 12) + "px"); s.style.setProperty("--c", cols[i % cols.length]);
+    fx.appendChild(s); setTimeout(() => s.remove(), 900);
+  }
+}
+function floatText(x, y, txt, cls){
+  const t = document.createElement("div");
+  t.className = "flt" + (cls ? " " + cls : ""); t.textContent = txt; t.style.left = x + "px"; t.style.top = y + "px";
+  $("fx").appendChild(t); setTimeout(() => t.remove(), 1200);
+}
+function finish(){
+  const cards = [...document.querySelectorAll(".mcard")];
+  cards.forEach((c, i) => setTimeout(() => { c.classList.remove("pop"); void c.offsetWidth; c.classList.add("pop"); }, i * 35));
+  J.sfx.win();
+  setTimeout(showWin, 500 + cards.length * 35);
+}
+function showWin(){
+  const N = LV[lvl].n, gold = Math.ceil(N * 1.8), silver = Math.ceil(N * 2.6);
+  const m = moves <= gold ? 3 : moves <= silver ? 2 : 1;
+  const bonus = [0, 100, 250, 500][m] * (lvl + 1), total = pts + bonus;
+  const prev = J.medalla("mem", lvl, m);
+  $("wMed").innerHTML = J.medallaSVG(m, 104);
+  $("wTitle").textContent = `¡Medalla de ${J.MEDALLAS[m]}!`;
+  const fanIds = sel.slice(0, 5), k = fanIds.length;
+  $("fan").innerHTML = fanIds.map((id, i) => { const a = k > 1 ? -22 + (44 / (k - 1)) * i : 0;
+    return `<div class="hc solo" data-id="${id}" style="--a:${a}deg;--dl:${150 + i*90}ms;z-index:${i}">${front(J.BY[id])}</div>`; }).join("");
+  $("wList").innerHTML = [
+    [`🃏 ${N} pares`, N * 100],
+    [`🔥 Combos${bestCombo > 1 ? ` (mejor x${bestCombo})` : ""}`, comboPts],
+    [`🏅 Medalla de ${J.MEDALLAS[m]} · ${moves} intentos`, bonus],
+  ].map(([t, v]) => `<li><span>${t}</span><b>+${J.fmt(v)}</b></li>`).join("");
+  countUp($("wTotal"), total);
+  $("nextBtn").hidden = lvl >= LV.length - 1;
+  J.pedirNombre($("wName"), "memorama", "n" + (lvl + 1), {p:total, l:`${N} pares`, m, mon:sel[0]});
+  show("win"); J.confeti();
+  const hint = m < 3 ? ` Para el oro, encuéntralos en ${gold} intentos o menos.` : "";
+  J.speak(`¡Muy bien! Encontraste los ${N} pares en ${moves} intentos. ¡Medalla de ${J.MEDALLAS[m]}!` + (m > prev && prev ? " ¡Mejoraste tu medalla!" : "") + hint);
+}
+function countUp(el, to){
+  const t0 = performance.now(), dur = 900;
+  const step = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = J.fmt(Math.round(to * (1 - Math.pow(1 - p, 3)))); if(p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+$("fan").onclick = e => { const c = e.target.closest(".hc"); if(c) J.cry(+c.dataset.id); };
+$("againBtn").onclick = () => { J.hush(); startGame(); };
+$("nextBtn").onclick = () => { J.hush(); lvl = Math.min(LV.length - 1, lvl + 1); const keep = sel.slice(); showPick(true); sel = keep.slice(0, LV[lvl].n); paintPick();
+  $("pickMsg").textContent = `Ya tienes ${sel.length}. ¡Elige ${LV[lvl].n - sel.length} más!`; };
+$("otherBtn").onclick = () => { J.hush(); showPick(); };
+$("quitBtn").onclick = () => {
+  if(pairs === 0 && moves === 0){ showMenu(); return; }
+  const m = J.modal(`<h2 class="jh">¿Salir del juego?</h2><p class="jsub">Si sales, este juego no se guarda.</p>
+    <div class="jrow"><button class="jbtn ok" type="button" data-a="stay">🃏 Seguir jugando</button><button class="jbtn light" type="button" data-a="out">Salir</button></div>`);
+  m.el.querySelector('[data-a="stay"]').onclick = () => m.close();
+  m.el.querySelector('[data-a="out"]').onclick = () => { m.close(); showMenu(); };
+};
+$("recBtn").onclick = () => { J.actx(); J.verRecords("memorama", "Memorama Pokémon", [["n1","3 pares"],["n2","6 pares"],["n3","12 pares"]]); };
+$("codeBtn").onclick = () => { J.actx(); J.verCodigo(() => { if(!$("menu").hidden) paintMenu(); }); };
+document.addEventListener("click", e => { if(e.target.closest('[data-a="rec"]')) $("recBtn").click(); });
+J.soundButton($("soundBtn"));
+
+showMenu();
+</script>
+</body>
+</html>

@@ -1,0 +1,1071 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laberinto Pokémon</title>
+<meta name="theme-color" content="#F4F0FF">
+<link rel="icon" href="../pokedex/icon-180.png">
+<link rel="apple-touch-icon" href="../pokedex/icon-180.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mali:wght@500;700&display=swap">
+<link rel="stylesheet" href="../comun/juegos.css">
+<style>
+/* Menú (elegir Pokémon + 15 niveles de aventura + juego libre) → laberinto en canvas → medalla y récord.
+   Laberinto nuevo cada vez. Llave + zona bloqueada opcional: adentro hay un Pokémon para liberar (o una Master Ball). */
+body{min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+body.playing{height:100vh;height:100dvh;overflow:hidden;overscroll-behavior:none}
+body.playing .bar{display:none}
+main{flex:1;display:flex;flex-direction:column;width:100%;max-width:1200px;margin:0 auto;min-height:0;
+  padding:0 max(14px,env(safe-area-inset-right,0px)) calc(14px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+body.playing main{padding-top:calc(10px + env(safe-area-inset-top,0px));padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+main > section{flex:1;min-height:0}
+.big{font-size:clamp(26px,5vw,40px);text-align:center;margin:4px 0 12px;line-height:1.15}
+
+/* ---------- Menú ---------- */
+.box{background:#fff;border:3px solid var(--lila);border-radius:24px;padding:12px 14px 14px;margin:0 0 12px}
+.boxh{display:flex;align-items:center;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+.boxh h3{margin:0;font-size:clamp(20px,3.6vw,26px);line-height:1.1}
+.boxh .muted{color:var(--muted);font-size:15px;margin-left:auto}
+.pv{width:76px;height:76px;flex:none;border-radius:50%;border:3px solid var(--lila2);background:radial-gradient(circle at 50% 72%,#f3e2b3 0 34%,#e3f4d6 35%,#fff 72%)}
+.pvt{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.pvt b{font-size:22px}
+.pvt small{color:var(--muted);font-size:15px}
+.mons{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(76px,1fr));gap:8px}
+.mon{position:relative;width:100%;height:100%;background:#faf8ff;border:3px solid var(--lila2);border-radius:18px;padding:4px 2px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;font-weight:700;font-size:13px;line-height:1.1}
+.mon img{width:100%;max-width:62px;aspect-ratio:1;object-fit:contain}
+.mon span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mon.sel{border-color:var(--ok);background:#effaf1;box-shadow:0 0 0 3px rgba(46,158,79,.22)}
+.mon.sel::after{content:"✓";position:absolute;top:-8px;right:-8px;width:26px;height:26px;border-radius:50%;background:var(--ok);color:#fff;display:grid;place-items:center;font-size:15px;border:2px solid #fff}
+.mon.lock img{filter:brightness(0) opacity(.5)}
+.mon.lock span{color:#9a90b0}
+.mon.lock i{position:absolute;top:3px;right:5px;font-style:normal;font-size:15px}
+.mon.next{border-style:dashed;border-color:var(--gold);background:#fffaf0}
+.mon:active{transform:scale(.96)}
+.adv{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:8px}
+.lv{width:100%;aspect-ratio:1;border-radius:18px;border:3px solid var(--lila);background:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:2px;font-weight:700}
+.lv b{font-size:24px;line-height:1}
+.lv .ic{font-size:16px;line-height:1}
+.lv .jmed{filter:none}
+.lv.next{border-color:var(--ok);background:#effaf1;animation:pulse 1.5s ease-in-out infinite}
+.lv:disabled{background:#ece8f4;border-color:#d4cce4;opacity:.7;cursor:default}
+.free{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:10px}
+.fr{border:3px solid var(--lila);background:#fff;border-radius:20px;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 4px 0 var(--lila2);font-weight:700}
+.fr .ic{font-size:34px;line-height:1.1}
+.fr b{font-size:19px}
+.fr small{color:var(--muted);font-size:14px;font-weight:500}
+.fr:active,.lv:active:not(:disabled){transform:translateY(2px)}
+.credits{text-align:center;color:#8a7fa3;font-size:12px;margin:6px 0 0}
+.credits a{color:inherit}
+@keyframes pulse{50%{box-shadow:0 0 0 6px rgba(46,158,79,.25)}}
+
+/* ---------- Juego ---------- */
+#play{display:flex;flex-direction:column;gap:8px}
+.hud{display:flex;align-items:center;gap:6px}
+.hb{flex:none;width:46px;height:46px;border-radius:14px;border:3px solid var(--lila);background:#fff;font-size:20px;cursor:pointer;padding:0;display:grid;place-items:center}
+.hb[aria-pressed="true"]{background:#fff7d6;border-color:var(--gold)}
+.hl{flex:1;min-width:0;font-weight:700;font-size:clamp(15px,2.6vw,20px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hc{flex:none;background:#fff;border:3px solid var(--lila);border-radius:999px;padding:3px 10px;font-weight:700;font-size:clamp(15px,2.4vw,19px);display:flex;align-items:center;gap:4px;white-space:nowrap;height:40px}
+.hc b{font-variant-numeric:tabular-nums}
+.hc img{width:24px;height:24px;image-rendering:pixelated;margin:-2px -2px -2px -4px}
+.hc.key{filter:grayscale(1);opacity:.35}
+.hc.key.on{filter:none;opacity:1;border-color:var(--gold);background:#fff7d6;animation:pop .45s ease}
+.hc.pts{background:#fff7d6;border-color:#f5cd5a}
+.stage{position:relative;flex:1;min-height:0;border-radius:24px;overflow:hidden;background:#1d5a2a;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.18),0 6px 18px rgba(30,60,30,.25)}
+#cv{position:absolute;left:0;top:0;display:block;cursor:pointer}
+.hint{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);background:rgba(36,24,64,.88);color:#fff;font-weight:700;font-size:clamp(15px,2.6vw,19px);
+  padding:10px 16px;border-radius:16px;text-align:center;pointer-events:none;width:max-content;max-width:calc(100% - 24px);line-height:1.35;transition:opacity .35s}
+.hint.off{opacity:0}
+
+/* ---------- Ventanas del juego ---------- */
+.ov{position:fixed;inset:0;z-index:45;background:rgba(24,12,52,.6);display:flex;overflow:auto;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
+  padding:calc(12px + env(safe-area-inset-top,0px)) 12px calc(12px + env(safe-area-inset-bottom,0px))}
+.opanel{position:relative;background:#fff;border:3px solid var(--lila);border-radius:28px;padding:18px 16px;text-align:center;width:min(560px,100%);margin:auto;animation:pin .4s cubic-bezier(.2,1.3,.4,1)}
+.opanel h2{font-size:clamp(28px,6vw,40px);margin:4px 0 6px;line-height:1.1}
+.opanel p{font-size:18px;color:var(--muted);margin:0 0 12px}
+.obtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.fart{position:relative;width:min(230px,58vw);aspect-ratio:1;margin:0 auto}
+.rays{position:absolute;inset:-22%;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,206,60,.6) 0 9deg,rgba(255,206,60,0) 9deg 18deg);animation:spin 9s linear infinite;
+  -webkit-mask-image:radial-gradient(circle,#000 25%,transparent 68%);mask-image:radial-gradient(circle,#000 25%,transparent 68%)}
+#freeImg{position:relative;width:100%;height:100%;object-fit:contain;transition:filter .7s ease,transform .7s cubic-bezier(.2,1.4,.4,1);filter:drop-shadow(0 8px 10px rgba(0,0,0,.25))}
+#freeImg.sil{filter:brightness(0) drop-shadow(0 8px 10px rgba(0,0,0,.25));transform:scale(.85)}
+.wmed{display:flex;justify-content:center}
+.wmed .jmed{animation:medal .8s cubic-bezier(.2,1.4,.4,1)}
+.wlist{list-style:none;margin:8px auto;padding:0;max-width:420px;display:flex;flex-direction:column;gap:4px}
+.wlist li{display:flex;justify-content:space-between;gap:10px;font-size:17px;background:#faf8ff;border-radius:12px;padding:6px 12px;text-align:left}
+.wlist li b{color:#7a5600;white-space:nowrap}
+.wlist li.miss{color:#9a90b0}
+.wlist li.miss b{color:#b6aec8}
+.wtotal{font-size:clamp(26px,5vw,34px);font-weight:700;margin:6px 0 10px}
+.wtotal b{color:#b07d00}
+.wname{background:#faf8ff;border:3px dashed var(--lila2);border-radius:20px;padding:12px;margin:0 0 14px}
+.psound{margin-top:12px}
+@keyframes pin{from{transform:scale(.85) translateY(20px);opacity:0}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes medal{0%{transform:scale(.2) rotate(-30deg);opacity:0}100%{transform:none;opacity:1}}
+@keyframes pop{0%{transform:scale(.3);opacity:0}70%{transform:scale(1.15);opacity:1}100%{transform:none}}
+
+@media (max-width:600px){
+  .wide{display:none}
+  .hc{padding:2px 8px;height:38px}
+  .hb{width:42px;height:42px}
+  .boxh .muted{width:100%;margin-left:0}
+}
+@media (max-width:440px){ .hc.time{display:none} }
+</style>
+</head>
+<body>
+<header class="bar">
+  <a class="home" href="../" aria-label="Regresar a los juegos">🏠</a>
+  <h1><span class="r">L</span>aberinto<span class="wide"> Pokémon</span></h1>
+  <button class="pill" id="recBtn" type="button" aria-label="Récords">🏆</button>
+  <button class="pill" id="codeBtn" type="button" aria-label="Código de guardado">💾</button>
+  <button class="pill" id="soundBtn" type="button">🔊</button>
+</header>
+
+<main>
+  <section id="menu">
+    <h2 class="big">¡Corre hasta la meta! 🏁</h2>
+    <div class="box">
+      <div class="boxh">
+        <canvas class="pv" id="pv" width="152" height="152" aria-hidden="true"></canvas>
+        <div class="pvt"><b id="pvName">Pikachu</b><small>Tu Pokémon · tócalo para elegir</small></div>
+        <span class="muted" id="libres"></span>
+      </div>
+      <ul class="mons" id="mons"></ul>
+    </div>
+    <div class="box">
+      <div class="boxh"><h3>🗺️ Aventura</h3><span class="muted">Desde el nivel 2 hay una llave 🔑 y un Pokémon por liberar</span></div>
+      <ol class="adv" id="adv"></ol>
+    </div>
+    <div class="box">
+      <div class="boxh"><h3>🎲 Juego libre</h3><span class="muted">Un laberinto nuevo cada vez</span></div>
+      <div class="free" id="free"></div>
+    </div>
+    <p class="credits">Pokémon animados: <a href="https://github.com/PMDCollab/SpriteCollab" target="_blank" rel="noopener">PMD Sprite Collab</a> (CC BY-NC 4.0). Pokémon © Nintendo / Game Freak. Juego de fans, sin fines de lucro.</p>
+  </section>
+
+  <section id="play" hidden>
+    <div class="hud">
+      <button class="hb" id="pauseBtn" type="button" aria-label="Pausa">⏸</button>
+      <span class="hl" id="hLvl"></span>
+      <span class="hc" id="hBalls" title="Poké Balls"><img alt="" id="hBallImg"><b>0/0</b></span>
+      <span class="hc key" id="hKey" title="Llave">🔑</span>
+      <span class="hc pts" title="Puntos">⭐ <b id="hPts">0</b></span>
+      <span class="hc time" title="Tiempo">⏱ <b id="hTime">0:00</b></span>
+      <button class="hb" id="mapBtn" type="button" aria-label="Ver todo el laberinto" aria-pressed="false" hidden>🗺️</button>
+    </div>
+    <div class="stage" id="stage">
+      <canvas id="cv"></canvas>
+      <div class="hint" id="hint"></div>
+    </div>
+  </section>
+</main>
+
+<div class="ov" id="freeOv" hidden>
+  <div class="opanel">
+    <div class="fart"><div class="rays"></div><img id="freeImg" alt=""></div>
+    <h2 id="freeTitle">¿Quién es?</h2>
+    <p id="freeText">¡Abriste la zona secreta!</p>
+    <div class="obtns"><button class="jbtn ok" id="freeOk" type="button">▶ Seguir</button><button class="jbtn purple" id="freeSwap" type="button"></button></div>
+  </div>
+</div>
+
+<div class="ov" id="pauseOv" hidden>
+  <div class="opanel">
+    <h2>⏸ Pausa</h2>
+    <p id="pauseText"></p>
+    <div class="obtns">
+      <button class="jbtn ok" id="resumeBtn" type="button">▶ Seguir</button>
+      <button class="jbtn blue" id="newBtn" type="button">🔁 Otro laberinto</button>
+      <button class="jbtn light" id="menuBtn" type="button">🏠 Menú</button>
+    </div>
+    <div class="psound"><button class="jbtn light small" id="pSound" type="button">🔊 Sonido</button></div>
+  </div>
+</div>
+
+<div class="ov" id="winOv" hidden>
+  <div class="opanel">
+    <div class="wmed" id="wMed"></div>
+    <h2 id="wTitle"></h2>
+    <ul class="wlist" id="wList"></ul>
+    <div class="wtotal">⭐ <b id="wTotal">0</b> puntos</div>
+    <div class="wname" id="wName"></div>
+    <div class="obtns">
+      <button class="jbtn blue" id="wNext" type="button">Siguiente nivel ▶</button>
+      <button class="jbtn ok" id="wAgain" type="button">🔁 Otra vez</button>
+      <button class="jbtn light" id="wMenu" type="button">🏠 Menú</button>
+    </div>
+  </div>
+</div>
+
+<script src="../comun/juegos.js"></script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+const rnd = (a,b) => a + Math.floor(Math.random() * (b - a + 1));
+const shuffle = a => { for(let i=a.length-1; i>0; i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]] = [a[j],a[i]]; } return a; };
+
+/* ---------- Pokémon animados (PMD Sprite Collab): w = caminar, i = quieto, h = saltar → [ancho, alto, duraciones en 1/60 s];
+   f = pies debajo del centro del cuadro, b = alto del cuerpo (para que los grandes no tapen el pasillo) ---------- */
+const SPR = {"25":{"w":[32,40,[8,10,8,10]],"i":[40,56,[40,2,3,3,3,2]],"h":[40,88,[2,1,2,3,4,4,3,2,1,2]],"f":8,"b":28},"4":{"w":[32,32,[6,8,6,8]],"i":[32,40,[12,8,8,8]],"h":[32,88,[2,1,2,3,4,4,3,2,1,2]],"f":9,"b":25},"7":{"w":[32,32,[12,8,12,8]],"i":[32,32,[30,2,2,4,4,4,2,2]],"h":[32,72,[2,1,2,3,4,4,3,2,1,2]],"f":7,"b":20},"1":{"w":[40,40,[4,4,4,4,4,4]],"i":[32,40,[40,6,6]],"h":[32,80,[2,1,2,3,4,4,3,2,1,2]],"f":9,"b":28},"133":{"w":[40,48,[4,4,4,4,6,2,2]],"i":[24,32,[16,16]],"h":[32,80,[2,1,2,3,4,4,3,2,1,2]],"f":11,"b":32},"150":{"w":[48,56,[12,6,6,12,6,6]],"i":[32,64,[40,2,4,6,8,6,4,2]],"h":[40,104,[2,1,2,3,4,4,3,2,1,2]],"f":8,"b":32},"448":{"w":[32,48,[6,6,6,6]],"i":[32,56,[40,2,2,4,2,2]],"h":[32,88,[2,1,2,3,4,4,3,2,1,2]],"f":8,"b":29},"94":{"w":[32,40,[8,10,8,10]],"i":[32,40,[40,4,3,3,3,3,3,4]],"h":[32,80,[2,1,2,3,4,4,3,2,1,2]],"f":8,"b":26},"131":{"w":[48,56,[10,12,10,12]],"i":[48,56,[40,12,16,12]],"h":[56,112,[2,1,2,3,4,4,3,2,1,2]],"f":13,"b":40},"384":{"w":[80,128,[8,8,6,4,4,4,8,8,6,6,6,6]],"i":[80,120,[14,10,14,10]],"h":[88,184,[2,1,2,3,4,4,3,2,1,2]],"f":14,"b":78},"906":{"w":[32,40,[4,6,4,6,6,4]],"i":[24,48,[38,2,2,5,3,3,2]],"h":[24,80,[2,1,2,3,4,4,3,2,1,2]],"f":9,"b":27},"658":{"w":[32,48,[8,10,8,10]],"i":[32,56,[40,12,2,3,6,2,4]],"h":[32,96,[2,1,2,3,4,4,3,2,1,2]],"f":8,"b":28},"700":{"w":[32,48,[10,10,10,10]],"i":[32,48,[7,7,7,7,7,7,7,7]],"h":[32,96,[2,1,2,3,4,4,3,2,1,2]],"f":10,"b":34},"778":{"w":[32,48,[8,10,8,10]],"i":[32,48,[40,6,6,6]],"h":[32,88,[2,1,2,3,4,4,3,2,1,2]],"f":7,"b":27},"197":{"w":[32,40,[8,8,8,8]],"i":[24,48,[60,10,2,2,2,2,2,2,2,2,2,2,2,10]],"h":[32,88,[2,1,2,3,4,4,3,2,1,2]],"f":11,"b":30}};
+const SHEET = (id, a) => `https://raw.githubusercontent.com/PMDCollab/SpriteCollab/master/sprite/${String(id).padStart(4,"0")}/${a}-Anim.png`;
+const ITEM = n => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/${n}.png`;
+const BALL = {poke:{f:"poke-ball", p:20, n:"Poké Ball"}, super:{f:"great-ball", p:50, n:"Súper Ball"}, ultra:{f:"ultra-ball", p:100, n:"Ultra Ball"}, master:{f:"master-ball", p:300, n:"Master Ball"}};
+
+/* Aventura: 15 niveles (celdas c×r; se acomodan a la forma de la pantalla). k = llave y zona, b = Poké Balls */
+const ADV = [
+  {c:5,r:5,k:0,b:3}, {c:6,r:6,k:1,b:3}, {c:7,r:6,k:1,b:4}, {c:7,r:7,k:1,b:4}, {c:8,r:7,k:1,b:5},
+  {c:8,r:8,k:1,b:5}, {c:9,r:8,k:1,b:6}, {c:9,r:9,k:1,b:6}, {c:10,r:9,k:1,b:7}, {c:10,r:10,k:1,b:7},
+  {c:11,r:10,k:1,b:8}, {c:11,r:11,k:1,b:8}, {c:12,r:11,k:1,b:9}, {c:12,r:12,k:1,b:9}, {c:13,r:13,k:1,b:10},
+];
+const FREE = {
+  chico:   {c:6, r:6, k:0, b:3, loops:0,   tier:0, meta:60,  label:"Chico",   ico:"🐣", sub:"Rapidito"},
+  mediano: {c:9, r:9, k:1, b:5, loops:.04, tier:0, meta:100, label:"Mediano", ico:"🐥", sub:"Con llave 🔑"},
+  grande:  {c:12,r:12,k:1, b:7, loops:.05, tier:1, meta:150, label:"Grande",  ico:"🦅", sub:"Súper Balls"},
+  gigante: {c:16,r:16,k:1, b:10,loops:.05, tier:2, meta:220, label:"Gigante", ico:"🐉", sub:"¡Enorme!"},
+};
+const W = 0, F = 1, RF = 2, RW = 3, DOOR = 4, OPEN = 5;
+const walkable = v => v === F || v === RF || v === OPEN;
+const DIRS = {u:[0,-1], d:[0,1], l:[-1,0], r:[1,0]}, OPP = {u:"d", d:"u", l:"r", r:"l"}, ROW = {d:0, r:2, u:4, l:6};
+const SPEED = 6.2;   // casillas por segundo
+
+/* ---------- Imágenes ---------- */
+const IMG = {};
+function img(url){ let i = IMG[url]; if(!i){ i = new Image(); i.decoding = "async"; i.src = url; IMG[url] = i; } return i; }
+const ready = i => !!i && i.complete && i.naturalWidth > 0;
+const sheets = id => ({w: img(SHEET(id,"Walk")), i: img(SHEET(id,"Idle")), h: img(SHEET(id,"Hop"))});
+function frameAt(durs, t){
+  let tot = 0; for(const d of durs) tot += d;
+  let f = (t * 60) % tot;
+  for(let k = 0; k < durs.length; k++){ if(f < durs[k]) return k; f -= durs[k]; }
+  return 0;
+}
+Object.values(BALL).forEach(b => img(ITEM(b.f)));
+
+/* ---------- Generar el laberinto ---------- */
+function makeMaze(C, R, o){
+  const TW = 2*C + 1, TH = 2*R + 1, t = new Uint8Array(TW * TH);
+  const I = (x,y) => y*TW + x;
+  const T = (x,y) => (x < 0 || y < 0 || x >= TW || y >= TH) ? W : t[I(x,y)];
+  const D4 = [[1,0],[-1,0],[0,1],[0,-1]];
+  const [sx, sy] = [[0,0],[C-1,0],[0,R-1],[C-1,R-1]][rnd(0,3)];
+  // Zona bloqueada de 2×2 celdas, en la mitad más lejana del inicio
+  let room = null;
+  if(o.room && C >= 4 && R >= 4){
+    const cand = [];
+    for(let x = 0; x <= C-2; x++) for(let y = 0; y <= R-2; y++){
+      const gx = Math.max(x - sx, sx - x - 1, 0), gy = Math.max(y - sy, sy - y - 1, 0);
+      if(Math.max(gx, gy) < 2) continue;
+      cand.push({x, y, d: Math.abs(x + .5 - sx) + Math.abs(y + .5 - sy)});
+    }
+    if(cand.length){ cand.sort((a,b) => b.d - a.d); const top = cand.slice(0, Math.max(1, Math.ceil(cand.length * .5))); room = top[rnd(0, top.length-1)]; }
+  }
+  const inRoom = (cx,cy) => !!room && cx >= room.x && cx < room.x + 2 && cy >= room.y && cy < room.y + 2;
+  const inGrid = (cx,cy) => cx >= 0 && cy >= 0 && cx < C && cy < R;
+  // Pasillos ("growing tree": casi siempre sigue el más nuevo → pasillos largos; a veces uno al azar → más ramas)
+  const vis = new Uint8Array(C * R), list = [[sx, sy]];
+  vis[sy*C + sx] = 1; t[I(2*sx+1, 2*sy+1)] = F;
+  while(list.length){
+    const k = Math.random() < .72 ? list.length - 1 : rnd(0, list.length - 1);
+    const [cx, cy] = list[k];
+    const nb = shuffle(D4.slice()).filter(([dx,dy]) => inGrid(cx+dx, cy+dy) && !vis[(cy+dy)*C + cx+dx] && !inRoom(cx+dx, cy+dy));
+    if(!nb.length){ list.splice(k, 1); continue; }
+    const [dx, dy] = nb[0], nx = cx + dx, ny = cy + dy;
+    vis[ny*C + nx] = 1; t[I(2*cx+1+dx, 2*cy+1+dy)] = F; t[I(2*nx+1, 2*ny+1)] = F;
+    list.push([nx, ny]);
+  }
+  const open = (cx,cy,dx,dy) => walkable(T(2*cx+1+dx, 2*cy+1+dy));
+  const bfs = srcs => {
+    const d = new Int32Array(C*R).fill(-1), par = new Int32Array(C*R).fill(-1), q = [];
+    for(const [x,y] of srcs){ d[y*C+x] = 0; q.push(x, y); }
+    for(let h = 0; h < q.length; h += 2){
+      const x = q[h], y = q[h+1];
+      for(const [dx,dy] of D4){
+        const nx = x + dx, ny = y + dy;
+        if(!inGrid(nx,ny) || d[ny*C+nx] >= 0 || !open(x,y,dx,dy)) continue;
+        d[ny*C+nx] = d[y*C+x] + 1; par[ny*C+nx] = y*C + x; q.push(nx, ny);
+      }
+    }
+    return {d, par};
+  };
+  // Meta: la celda más lejana del inicio (siempre es un callejón, así nadie la pisa sin querer)
+  let B = bfs([[sx, sy]]), gx = sx, gy = sy;
+  for(let y = 0; y < R; y++) for(let x = 0; x < C; x++) if(!inRoom(x,y) && B.d[y*C+x] > B.d[gy*C+gx]){ gx = x; gy = y; }
+  // Atajos en laberintos grandes (sin tocar la meta ni la zona)
+  if(o.loops){
+    const walls = [];
+    for(let y = 0; y < R; y++) for(let x = 0; x < C; x++) for(const [dx,dy] of [[1,0],[0,1]]){
+      const nx = x + dx, ny = y + dy;
+      if(!inGrid(nx,ny) || inRoom(x,y) || inRoom(nx,ny) || (x === gx && y === gy) || (nx === gx && ny === gy) || open(x,y,dx,dy)) continue;
+      walls.push([2*x+1+dx, 2*y+1+dy]);
+    }
+    shuffle(walls).slice(0, Math.round(C * R * o.loops)).forEach(([x,y]) => { t[I(x,y)] = F; });
+  }
+  // Zona: piso de baldosas, muro de piedra y una puerta con candado
+  let door = null, rm = null;
+  if(room){
+    const x0 = 2*room.x, y0 = 2*room.y;
+    for(let y = y0; y <= y0 + 4; y++) for(let x = x0; x <= x0 + 4; x++)
+      t[I(x,y)] = (x === x0 || x === x0 + 4 || y === y0 || y === y0 + 4) ? RW : RF;
+    const dc = [];
+    for(let i = 0; i < 2; i++) for(let j = 0; j < 2; j++){
+      const cx = room.x + i, cy = room.y + j;
+      for(const [dx,dy] of D4){
+        const nx = cx + dx, ny = cy + dy;
+        if(!inGrid(nx,ny) || inRoom(nx,ny) || (nx === gx && ny === gy)) continue;
+        dc.push({x:2*cx+1+dx, y:2*cy+1+dy, cx:nx, cy:ny});
+      }
+    }
+    door = dc[rnd(0, dc.length - 1)];
+    t[I(door.x, door.y)] = DOOR; door.open = false; door.anim = 0;
+    rm = {x0:x0+1, y0:y0+1, cx:x0+2, cy:y0+2, got:false};
+  }
+  B = bfs([[sx, sy]]);
+  const path = []; for(let c = gy*C + gx; c >= 0; c = B.par[c]) path.push(c); path.reverse();
+  const onPath = new Set(path);
+  const PD = bfs(path.map(c => [c % C, (c / C) | 0]));          // qué tan lejos está cada celda del camino a la meta
+  const deg = c => { const x = c % C, y = (c / C) | 0; let n = 0; for(const [dx,dy] of D4) if(inGrid(x+dx,y+dy) && !inRoom(x+dx,y+dy) && open(x,y,dx,dy)) n++; return n; };
+  const freeCells = [];
+  for(let y = 0; y < R; y++) for(let x = 0; x < C; x++) if(!inRoom(x,y) && !(x === sx && y === sy) && !(x === gx && y === gy)) freeCells.push(y*C + x);
+  const freeSet = new Set(freeCells), used = new Set(), tile = c => ({x:2*(c % C) + 1, y:2*((c / C) | 0) + 1});
+  // Llave: en un callejón fuera del camino, de los más escondidos
+  let key = null, keyCell = -1;
+  if(room){
+    const doorCell = door.cy*C + door.cx;
+    let pool = freeCells.filter(c => !onPath.has(c) && deg(c) === 1 && c !== doorCell);
+    if(!pool.length) pool = freeCells.filter(c => !onPath.has(c));
+    if(!pool.length) pool = freeCells.slice();
+    pool.sort((a,b) => PD.d[b] - PD.d[a]);
+    const top = pool.slice(0, 3); keyCell = top[rnd(0, top.length - 1)];
+    key = {...tile(keyCell), got:false}; used.add(keyCell);
+  }
+  // Poké Balls: las mejores en callejones; un tercio a la mitad del camino a la meta
+  const types = o.balls.slice().sort((a,b) => BALL[b].p - BALL[a].p);
+  const nPath = Math.floor(types.length / 3), spots = [];
+  const offTarget = types.length - nPath;
+  for(const c of shuffle(freeCells.filter(c => !onPath.has(c) && deg(c) === 1))){ if(spots.length >= offTarget) break; if(!used.has(c)){ used.add(c); spots.push(c); } }
+  for(const c of shuffle(freeCells.filter(c => !onPath.has(c)))){ if(spots.length >= offTarget) break; if(!used.has(c)){ used.add(c); spots.push(c); } }
+  const pathCells = path.filter(c => freeSet.has(c));
+  const need = types.length - spots.length;
+  for(let k = 1; k <= need && pathCells.length; k++){
+    let j = Math.min(pathCells.length - 1, Math.round(k * pathCells.length / (need + 1)));
+    while(j < pathCells.length && used.has(pathCells[j])) j++;
+    if(j < pathCells.length){ used.add(pathCells[j]); spots.push(pathCells[j]); }
+  }
+  const items = spots.map((c, k) => ({...tile(c), type:types[k], got:false, ph:Math.random() * 6}));
+  const detour = room ? (Math.max(0, PD.d[keyCell]) + Math.max(0, PD.d[door.cy*C + door.cx])) * 4 + 8 : 0;
+  return {C, R, TW, TH, t, T, I, start:{x:2*sx+1, y:2*sy+1}, goal:{x:2*gx+1, y:2*gy+1}, key, door, room:rm, items,
+    pathTiles:(path.length - 1) * 2, detour, seed:rnd(1, 1e9)};
+}
+function ballTypes(n, tier){
+  const a = Array(n).fill("poke");
+  if(tier >= 1) for(let i = 0; i < Math.floor(n / 3); i++) a[i] = "super";
+  if(tier >= 2) a[0] = "ultra";
+  return a;
+}
+
+/* ---------- Estado ---------- */
+let state = "menu", cfg = null, M = null, mon = 25, SH = null, tick = 0, last = 0;
+let hasKey = false, tPlay = 0, started = false, pts = 0, animT = 0, hopT = 0, dustT = 0, msgT = 0;
+const P = {x:0, y:0, tx:0, ty:0, prog:0, moving:false, dir:"d", face:"d", want:null, wantT:0, path:[], hop:0, bump:0};
+const Z = {fit:30, follow:40, cur:30, target:30, map:false, canFollow:false};
+const cam = {x:0, y:0};
+const FX = [];
+let VW = 300, VH = 300, DPR = 1, ST = null, TR = null, TsR = 0;
+const cv = $("cv"), ctx = cv.getContext("2d");
+
+/* ---------- Menú ---------- */
+function show(id){
+  for(const s of document.querySelectorAll("main > section")) s.hidden = s.id !== id;
+  document.body.classList.toggle("playing", id === "play");
+  window.scrollTo(0, 0);
+}
+function paintMenu(){
+  const lib = J.libres();
+  if(!lib.includes(mon)) mon = 25;
+  const nextLocked = J.data.libres + 1;
+  $("mons").innerHTML = J.ORDEN.map((id, i) => {
+    const m = J.BY[id], free = i <= J.data.libres;
+    return `<li><button class="mon${free ? "" : " lock"}${id === mon ? " sel" : ""}${i === nextLocked ? " next" : ""}" type="button" data-id="${id}" aria-label="${free ? m.n : "Pokémon bloqueado"}">
+      <img src="${J.ART(id)}" alt="" loading="lazy"><span>${free ? m.n : "???"}</span>${free ? "" : "<i>🔒</i>"}</button></li>`;
+  }).join("");
+  $("libres").textContent = lib.length === 15 ? "¡Liberaste a los 15! 🎉" : `${lib.length} de 15 liberados`;
+  $("pvName").textContent = J.BY[mon].n;
+  $("adv").innerHTML = ADV.map((l, i) => {
+    const md = J.medalla("lab", i), open = i === 0 || J.medalla("lab", i - 1) > 0, next = open && !md;
+    return `<li><button class="lv${next ? " next" : ""}" type="button" data-i="${i}" ${open ? "" : "disabled"} aria-label="Nivel ${i + 1}${md ? ", medalla de " + J.MEDALLAS[md] : open ? "" : ", bloqueado"}">
+      <b>${i + 1}</b>${md ? J.medallaSVG(md, 20) : `<span class="ic">${open ? (l.k ? "🔑" : "⭐") : "🔒"}</span>`}</button></li>`;
+  }).join("");
+  $("free").innerHTML = Object.entries(FREE).map(([k, f]) => `<button class="fr" type="button" data-k="${k}"><span class="ic">${f.ico}</span><b>${f.label}</b><small>${f.sub}</small></button>`).join("")
+    + `<button class="fr" type="button" data-k="sorpresa"><span class="ic">🎲</span><b>Sorpresa</b><small>¿De qué tamaño?</small></button>`;
+}
+function showMenu(){
+  state = "menu"; J.hush(); cancelAnimationFrame(tick);
+  for(const o of document.querySelectorAll(".ov")) o.hidden = true;
+  paintMenu(); show("menu"); preview();
+}
+$("mons").onclick = e => {
+  const b = e.target.closest(".mon"); if(!b) return;
+  J.actx();
+  const id = +b.dataset.id;
+  if(b.classList.contains("lock")){
+    J.sfx.no();
+    J.toast(b.classList.contains("next") ? "🔑 Busca la llave en el laberinto para liberarlo" : "🔒 Primero libera a los anteriores");
+    return;
+  }
+  mon = id; J.pref("labMon", id); J.cry(id); J.sfx.tap();
+  for(const x of document.querySelectorAll(".mon")) x.classList.toggle("sel", x === b);
+  $("pvName").textContent = J.BY[id].n; preview();
+};
+$("adv").onclick = e => { const b = e.target.closest(".lv"); if(b && !b.disabled){ J.actx(); start({mode:"adv", i:+b.dataset.i}); } };
+$("free").onclick = e => { const b = e.target.closest(".fr"); if(b){ J.actx(); start({mode:"free", size:b.dataset.k}); } };
+
+/* Vista previa: tu Pokémon caminando en su lugar */
+let pvRaf = 0;
+function preview(){
+  cancelAnimationFrame(pvRaf);
+  const c = $("pv"), g = c.getContext("2d"), sh = sheets(mon), m = SPR[mon];
+  const loop = ts => {
+    if($("menu").hidden) return;
+    const t = ts / 1000, d = ["d","r","u","l"][Math.floor(t / 1.8) % 4], [fw, fh, durs] = m.w;
+    g.setTransform(1,0,0,1,0,0); g.clearRect(0, 0, c.width, c.height);
+    const k = c.height * .5 / Math.max(m.b, 26), feet = c.height * .74;
+    g.fillStyle = "rgba(0,0,0,.18)"; g.beginPath(); g.ellipse(c.width/2, feet, c.width*.2, c.width*.06, 0, 0, 7); g.fill();
+    if(ready(sh.w)){
+      g.imageSmoothingEnabled = false;
+      const fi = frameAt(durs, t * 1.4);
+      g.drawImage(sh.w, fi*fw, ROW[d]*fh, fw, fh, c.width/2 - fw*k/2, feet - m.f*k - fh*k/2, fw*k, fh*k);
+    }else{
+      const a = img(J.ART(mon)); if(ready(a)) g.drawImage(a, c.width*.18, c.height*.1, c.width*.64, c.height*.64);
+    }
+    pvRaf = requestAnimationFrame(loop);
+  };
+  pvRaf = requestAnimationFrame(loop);
+}
+
+/* ---------- Empezar un laberinto ---------- */
+function levelName(){
+  if(cfg.mode === "adv") return `Nivel ${cfg.i + 1}`;
+  return cfg.size === "sorpresa" ? "🎲 Sorpresa" : `${FREE[cfg.size].ico} ${FREE[cfg.size].label}`;
+}
+function start(c){
+  cfg = c;
+  let base;
+  if(c.mode === "adv"){ const l = ADV[c.i]; base = {...l, loops: c.i >= 4 ? .04 : 0, tier: c.i < 5 ? 0 : c.i < 10 ? 1 : 2, meta: 100 + 10*c.i}; }
+  else if(c.size === "sorpresa"){ const a = rnd(6, 14), b = clamp(a + rnd(-2, 2), 5, 15); base = {c:a, r:b, k:1, b:Math.max(3, Math.round(a*b/13)), loops:.05, tier: a*b > 120 ? 2 : a*b > 70 ? 1 : 0, meta: 40 + Math.round(a*b/2)}; }
+  else base = FREE[c.size];
+  show("play");
+  for(const o of document.querySelectorAll(".ov")) o.hidden = true;
+  const r = $("stage").getBoundingClientRect();
+  const asp = clamp(r.width / Math.max(1, r.height), .58, 1.75), cells = base.c * base.r;
+  const C = Math.max(4, Math.round(Math.sqrt(cells * asp))), R = Math.max(4, Math.round(cells / C));
+  M = makeMaze(C, R, {room: !!base.k, balls: ballTypes(base.b, base.tier), loops: base.loops});
+  M.meta = base.meta;
+  if(M.room){ const nx = J.siguiente(); M.room.reward = nx ? {type:"mon", id:nx} : {type:"ball", ball:"master"}; if(nx){ const s = sheets(nx); M.room.sil = s; } }
+  SH = sheets(mon);
+  Object.assign(P, {x:M.start.x, y:M.start.y, tx:M.start.x, ty:M.start.y, prog:0, moving:false, dir:"d", face:"d", want:null, path:[], hop:0, bump:0});
+  hasKey = false; tPlay = 0; started = false; pts = 0; FX.length = 0; animT = 0; Z.map = false;
+  cam.x = P.x; cam.y = P.y;
+  resize(true);
+  Z.cur = Z.target;
+  visit(P.x, P.y);
+  $("hLvl").textContent = levelName();
+  $("hBallImg").src = ITEM("poke-ball");
+  $("hKey").hidden = !M.key; $("hKey").classList.remove("on");
+  hud();
+  const touch = matchMedia("(hover: none)").matches;
+  const how = touch ? "👆 Desliza el dedo para correr" : "⌨️ Usa las flechas del teclado para correr";
+  setHint(how + (M.key ? "<br>🔑 Busca la llave y abre la zona secreta" : "<br>🏁 ¡Llega a la bandera!"));
+  state = "play"; last = 0;
+  J.cry(mon);
+  cancelAnimationFrame(tick); tick = requestAnimationFrame(frame);
+}
+function setHint(html){ const h = $("hint"); h.innerHTML = html; h.classList.remove("off"); }
+function hideHint(){ $("hint").classList.add("off"); }
+
+/* ---------- Pantalla, zoom y capas fijas ---------- */
+function resize(force){
+  if(!M || $("play").hidden) return;
+  const r = $("stage").getBoundingClientRect();
+  DPR = Math.min(2, window.devicePixelRatio || 1);
+  VW = Math.max(50, r.width); VH = Math.max(50, r.height);
+  cv.width = Math.round(VW * DPR); cv.height = Math.round(VH * DPR);
+  cv.style.width = VW + "px"; cv.style.height = VH + "px";
+  Z.fit = Math.min(VW / M.TW, VH / M.TH);
+  Z.follow = Math.max(Z.fit, clamp(Math.min(VW, VH) / 9.5, 34, 58));
+  Z.canFollow = Z.fit < 24;
+  Z.target = Z.canFollow && !Z.map ? Z.follow : Z.fit;
+  $("mapBtn").hidden = !Z.canFollow;
+  $("mapBtn").setAttribute("aria-pressed", String(Z.map));
+  const want = Math.round(Math.min((Z.canFollow ? Z.follow : Z.fit) * DPR, Math.sqrt(9e6 / (M.TW * M.TH)), 128));
+  if(force || !ST || Math.abs(want - TsR) > 2) buildLayers(want);
+}
+window.addEventListener("resize", () => resize(false));
+window.addEventListener("orientationchange", () => setTimeout(() => resize(false), 300));
+
+function hash(x, y, k){
+  let n = (Math.imul(x, 374761393) + Math.imul(y, 668265263) + Math.imul(k + 1, 1442695041) + M.seed) | 0;
+  n = Math.imul(n ^ (n >>> 13), 1274126177); n ^= n >>> 16;
+  return (n >>> 0) / 4294967296;
+}
+function buildLayers(s){
+  TsR = s;
+  const w = M.TW * s, h = M.TH * s;
+  ST = document.createElement("canvas"); ST.width = w; ST.height = h;
+  TR = document.createElement("canvas"); TR.width = w; TR.height = h;
+  const g = ST.getContext("2d"), T = M.T;
+  const wall = v => v === W || v === RW;
+  // Piso
+  for(let y = 0; y < M.TH; y++) for(let x = 0; x < M.TW; x++){
+    const v = T(x,y), px = x*s, py = y*s;
+    if(v === RF || v === DOOR || v === OPEN){
+      g.fillStyle = (x + y) % 2 ? "#F7DFF0" : "#F0CDE5"; g.fillRect(px, py, s, s);
+      g.strokeStyle = "rgba(170,95,150,.28)"; g.lineWidth = Math.max(1, s * .04); g.strokeRect(px + s*.02, py + s*.02, s*.96, s*.96);
+    }else if(v === F){
+      g.fillStyle = (x + y) % 2 ? "#F3E3B6" : "#EEDCAA"; g.fillRect(px, py, s, s);
+      if(hash(x,y,0) < .4){
+        g.fillStyle = "rgba(160,120,60,.32)";
+        g.beginPath(); g.ellipse(px + s*(.2 + .6*hash(x,y,1)), py + s*(.25 + .55*hash(x,y,2)), s*.05, s*.035, 0, 0, 7); g.fill();
+      }
+      if(hash(x,y,3) < .18){
+        g.fillStyle = "rgba(120,170,80,.55)";
+        const gx = px + s*(.15 + .7*hash(x,y,4)), gy = py + s*(.3 + .5*hash(x,y,5));
+        for(let k = -1; k <= 1; k++){ g.beginPath(); g.moveTo(gx + k*s*.04, gy); g.lineTo(gx + k*s*.07, gy - s*.11); g.lineTo(gx + k*s*.04 + s*.02, gy); g.fill(); }
+      }
+    }
+  }
+  // Sombra de los muros sobre el piso
+  for(let y = 0; y < M.TH; y++) for(let x = 0; x < M.TW; x++){
+    if(wall(T(x,y)) || !wall(T(x,y-1))) continue;
+    const px = x*s, py = y*s, gr = g.createLinearGradient(0, py, 0, py + s*.32);
+    gr.addColorStop(0, "rgba(40,55,20,.30)"); gr.addColorStop(1, "rgba(40,55,20,0)");
+    g.fillStyle = gr; g.fillRect(px, py, s, s*.32);
+  }
+  // Muros: arbustos (verde) y piedra (zona secreta)
+  for(let y = 0; y < M.TH; y++) for(let x = 0; x < M.TW; x++){
+    const v = T(x,y); if(!wall(v)) continue;
+    const below = T(x, y+1), front = !wall(below) && y + 1 < M.TH, px = x*s, py = y*s;
+    if(v === W) hedge(g, x, y, px, py, s, front); else stone(g, x, y, px, py, s, front);
+  }
+  // Tapete de salida
+  const sx = (M.start.x + .5)*s, sy = (M.start.y + .5)*s;
+  g.fillStyle = "rgba(47,123,229,.22)"; g.beginPath(); g.ellipse(sx, sy + s*.12, s*.42, s*.3, 0, 0, 7); g.fill();
+  g.strokeStyle = "rgba(47,123,229,.75)"; g.lineWidth = s*.05; g.setLineDash([s*.09, s*.07]); g.stroke(); g.setLineDash([]);
+  // Huellitas ya pisadas
+  const tg = TR.getContext("2d");
+  if(M.visited) for(const k of M.visited) paintStep(tg, k % M.TW, Math.floor(k / M.TW));
+}
+function hedge(g, x, y, px, py, s, front){
+  const top = front ? s*.66 : s;
+  g.fillStyle = "#3F9B49"; g.fillRect(px, py, s, top + (front ? 1 : 0));
+  if(front){
+    g.fillStyle = "#2C7034"; g.fillRect(px, py + s*.6, s, s*.4);
+    g.fillStyle = "#215A28"; g.fillRect(px, py + s*.92, s, s*.08);
+    g.fillStyle = "#3F9B49";
+    for(let i = 0; i < 4; i++){ g.beginPath(); g.arc(px + s*(.125 + .25*i), py + s*.6, s*.15, 0, 7); g.fill(); }
+    g.fillStyle = "rgba(20,60,25,.35)";
+    for(let i = 0; i < 3; i++){ g.beginPath(); g.arc(px + s*(.2 + .3*i + .05*hash(x,y,20+i)), py + s*(.78 + .08*hash(x,y,23+i)), s*.045, 0, 7); g.fill(); }
+  }
+  g.fillStyle = "#56B657";
+  for(let i = 0; i < 3; i++){ g.beginPath(); g.arc(px + s*(.18 + .64*hash(x,y,6+i)), py + s*(.16 + (front ? .34 : .66)*hash(x,y,9+i)), s*(.1 + .06*hash(x,y,12+i)), 0, 7); g.fill(); }
+  g.fillStyle = "#86D47E";
+  for(let i = 0; i < 2; i++){ g.beginPath(); g.arc(px + s*(.2 + .6*hash(x,y,15+i)), py + s*(.12 + (front ? .3 : .6)*hash(x,y,17+i)), s*.045, 0, 7); g.fill(); }
+  if(hash(x,y,19) < .13){
+    const fx = px + s*(.3 + .4*hash(x,y,26)), fy = py + s*(.2 + (front ? .25 : .5)*hash(x,y,27)), c = ["#FF8FC8","#FFFFFF","#FFD84D"][Math.floor(hash(x,y,28)*3)];
+    g.fillStyle = c; for(let k = 0; k < 5; k++){ const a = k * 1.2566; g.beginPath(); g.arc(fx + Math.cos(a)*s*.05, fy + Math.sin(a)*s*.05, s*.04, 0, 7); g.fill(); }
+    g.fillStyle = "#F2B705"; g.beginPath(); g.arc(fx, fy, s*.03, 0, 7); g.fill();
+  }
+}
+function stone(g, x, y, px, py, s, front){
+  const top = front ? s*.66 : s;
+  g.fillStyle = "#D3CCE2"; g.fillRect(px, py, s, top + (front ? 1 : 0));
+  g.strokeStyle = "rgba(95,82,130,.4)"; g.lineWidth = Math.max(1, s * .035);
+  const a = y % 2 ? .3 : .7, b = y % 2 ? .7 : .3;
+  g.beginPath();
+  g.moveTo(px, py + top*.5); g.lineTo(px + s, py + top*.5);
+  g.moveTo(px + s*a, py); g.lineTo(px + s*a, py + top*.5);
+  g.moveTo(px + s*b, py + top*.5); g.lineTo(px + s*b, py + top);
+  g.stroke();
+  g.fillStyle = "rgba(255,255,255,.4)"; g.fillRect(px, py, s, s*.05);
+  if(front){ g.fillStyle = "#958CB0"; g.fillRect(px, py + top, s, s - top); g.fillStyle = "#7B7198"; g.fillRect(px, py + s*.92, s, s*.08); }
+}
+function paintStep(g, x, y){
+  const s = TsR;
+  g.fillStyle = "rgba(255,255,255,.42)";
+  g.beginPath(); g.ellipse((x + .5)*s, (y + .55)*s, s*.12, s*.08, 0, 0, 7); g.fill();
+}
+function visit(x, y){
+  if(!M.visited) M.visited = new Set();
+  const k = y * M.TW + x; if(M.visited.has(k)) return;
+  M.visited.add(k); if(TR) paintStep(TR.getContext("2d"), x, y);
+}
+
+/* ---------- Moverse ---------- */
+const tileAt = (x,y) => M.T(x,y);
+const canGo = (x,y,d) => walkable(tileAt(x + DIRS[d][0], y + DIRS[d][1]));
+function input(d){
+  if(state !== "play") return;
+  if(!started){ started = true; hideHint(); }
+  if(P.path.length) return;                     // caminando solito dentro de la zona
+  if(P.moving){
+    if(d === OPP[P.dir]){                        // darse la vuelta a medio paso
+      [P.x, P.tx] = [P.tx, P.x]; [P.y, P.ty] = [P.ty, P.y]; P.prog = 1 - P.prog; P.dir = d; P.face = d; P.want = null;
+      return;
+    }
+    P.want = d; P.wantT = performance.now(); return;
+  }
+  if(canGo(P.x, P.y, d)) startMove(d);
+  else{
+    P.face = d; P.bump = 1; J.sfx.bump();
+    const nx = P.x + DIRS[d][0], ny = P.y + DIRS[d][1];
+    if(M.door && !M.door.open && nx === M.door.x && ny === M.door.y) touchDoor();
+  }
+}
+function startMove(d){ P.dir = d; P.face = d; P.tx = P.x + DIRS[d][0]; P.ty = P.y + DIRS[d][1]; P.prog = 0; P.moving = true; }
+function nextDir(){
+  if(P.path.length) return P.path.shift();
+  const x = P.x, y = P.y;
+  if(P.want){
+    const w = P.want;
+    if(performance.now() - P.wantT > 1600) P.want = null;
+    else if(canGo(x, y, w)){ P.want = null; return w; }
+  }
+  const opts = ["u","d","l","r"].filter(d => d !== OPP[P.dir] && canGo(x, y, d));
+  const room = tileAt(x, y) === RF;
+  if(opts.includes(P.dir) && (opts.length === 1 || room)) return P.dir;   // pasillo: sigue derecho
+  if(opts.length === 1 && !room) return opts[0];                           // esquina: da la vuelta solito
+  return null;                                                             // cruce o callejón: se detiene
+}
+function adjacentToDoor(x, y){ const d = M.door; return d && Math.abs(d.x - x) + Math.abs(d.y - y) === 1; }
+function arrive(){
+  const x = P.x, y = P.y;
+  visit(x, y);
+  for(const it of M.items) if(!it.got && it.x === x && it.y === y) collect(it);
+  if(M.key && !M.key.got && M.key.x === x && M.key.y === y) getKey();
+  if(M.door && !M.door.open && adjacentToDoor(x, y)) touchDoor(true);
+  if(M.room && !M.room.got && tileAt(x, y) === RF){
+    if(x === M.room.cx && y === M.room.cy) getReward();
+    else if(!P.path.length){
+      P.want = null;
+      const dx = M.room.cx - x, dy = M.room.cy - y;
+      P.path = [];
+      for(let i = 0; i < Math.abs(dy); i++) P.path.push(dy > 0 ? "d" : "u");
+      for(let i = 0; i < Math.abs(dx); i++) P.path.push(dx > 0 ? "r" : "l");
+    }
+  }
+  if(x === M.goal.x && y === M.goal.y) reachGoal();
+}
+function update(dt){
+  if(state === "play" && started) tPlay += dt;
+  if(P.bump > 0) P.bump = Math.max(0, P.bump - dt * 6);
+  if(P.hop > 0){ P.hop -= dt; hopT += dt; } else hopT = 0;
+  if(M.door && M.door.open && M.door.anim < 1) M.door.anim = Math.min(1, M.door.anim + dt * 1.8);
+  if(state === "play" && P.moving){
+    P.prog += SPEED * dt;
+    dustT -= dt;
+    if(dustT <= 0){ dustT = .08; dust(); }
+    while(P.moving && P.prog >= 1){
+      const over = P.prog - 1;
+      P.x = P.tx; P.y = P.ty; P.moving = false;
+      arrive();
+      if(state !== "play") break;
+      const nd = nextDir();
+      if(nd && canGo(P.x, P.y, nd)){ startMove(nd); P.prog = over; }
+    }
+  }
+  // cámara
+  const px = P.moving ? P.x + (P.tx - P.x) * P.prog : P.x, py = P.moving ? P.y + (P.ty - P.y) * P.prog : P.y;
+  const k = Math.min(1, dt * 7);
+  cam.x += (px - cam.x) * k; cam.y += (py - cam.y) * k;
+  Z.cur += (Z.target - Z.cur) * Math.min(1, dt * 6);
+  // efectos
+  for(let i = FX.length - 1; i >= 0; i--){
+    const f = FX[i]; f.life -= dt;
+    if(f.life <= 0){ FX.splice(i, 1); continue; }
+    f.x += f.vx * dt; f.y += f.vy * dt; f.vy += (f.g || 0) * dt; f.rot = (f.rot || 0) + (f.vr || 0) * dt;
+  }
+  msgT -= dt;
+  if(msgT <= 0){ msgT = .25; hud(); }
+}
+
+/* ---------- Recoger cosas ---------- */
+function collect(it){
+  it.got = true; pts += BALL[it.type].p; J.sfx.coin();
+  stars(it.x, it.y, it.type === "poke" ? "#ffffff" : it.type === "super" ? "#7fb4ff" : "#ffe27a", 9);
+  floatPts(it.x, it.y, "+" + BALL[it.type].p);
+  hud();
+}
+function getKey(){
+  M.key.got = true; hasKey = true; pts += 30; J.sfx.key();
+  stars(M.key.x, M.key.y, "#ffe27a", 14); floatPts(M.key.x, M.key.y, "+30");
+  $("hKey").classList.add("on");
+  J.toast("🔑 ¡Tienes la llave! Ve a abrir la zona secreta");
+  J.speak("¡Tienes la llave!");
+  hud();
+}
+let doorMsg = 0;
+function touchDoor(auto){
+  const d = M.door;
+  if(hasKey){
+    d.open = true; d.anim = 0; M.t[M.I(d.x, d.y)] = OPEN; J.sfx.door();
+    stars(d.x, d.y, "#ffe27a", 12);
+    J.toast("🔓 ¡Abriste la zona secreta!");
+  }else if(performance.now() - doorMsg > 4000){
+    doorMsg = performance.now();
+    J.toast("🔒 Está cerrada. Busca la llave 🔑");
+    if(!auto) J.speak("Necesitas la llave");
+  }
+}
+function getReward(){
+  const r = M.room; r.got = true; P.path = [];
+  stars(r.cx, r.cy, "#ffe27a", 18);
+  if(r.reward.type === "mon"){
+    const id = J.liberar() || r.reward.id;
+    r.freed = id; pts += 150; hud();
+    showFreed(id);
+  }else{
+    pts += BALL.master.p; hud(); J.sfx.free();
+    floatPts(r.cx, r.cy, "+" + BALL.master.p);
+    J.toast("✨ ¡Una Master Ball! +300 puntos");
+    J.speak("¡Una Master Ball!");
+  }
+}
+function showFreed(id){
+  state = "freed"; P.moving = false; J.sfx.free();
+  const name = J.BY[id].n, im = $("freeImg");
+  im.src = J.ART(id); im.classList.add("sil");
+  $("freeTitle").textContent = "¿Quién es ese Pokémon?";
+  $("freeText").textContent = "¡Abriste la zona secreta!";
+  $("freeSwap").textContent = `🔄 Jugar con ${name}`;
+  $("freeOk").hidden = $("freeSwap").hidden = true;
+  $("freeOv").hidden = false;
+  setTimeout(() => {
+    im.classList.remove("sil");
+    $("freeTitle").textContent = `¡Liberaste a ${name}!`;
+    $("freeText").textContent = `Ya puedes jugar con ${name} en el laberinto. +150 puntos`;
+    $("freeOk").hidden = $("freeSwap").hidden = false;
+    J.confeti(document.body, 50);
+    J.cry(id).then(() => J.speak(`¡Liberaste a ${name}!`));
+  }, 1300);
+  $("freeSwap").onclick = () => { mon = id; J.pref("labMon", id); SH = sheets(id); J.cry(id); closeFreed(); };
+}
+function closeFreed(){ $("freeOv").hidden = true; state = "play"; last = 0; }
+$("freeOk").onclick = () => closeFreed();
+function reachGoal(){
+  state = "won"; P.moving = false; P.hop = 99; hopT = 0; P.face = "d";
+  J.sfx.win(); J.cry(mon);
+  for(let i = 0; i < 4; i++) setTimeout(() => stars(M.goal.x, M.goal.y, ["#ffe27a","#ff8fc8","#7fd0ff","#9ff59a"][i], 14), i * 180);
+  setTimeout(showWin, 1500);
+}
+
+/* ---------- Puntos y medalla ---------- */
+function hud(){
+  if(!M) return;
+  const got = M.items.filter(i => i.got).length;
+  $("hBalls").querySelector("b").textContent = `${got}/${M.items.length}`;
+  $("hPts").textContent = J.fmt(pts);
+  const s = Math.floor(tPlay);
+  $("hTime").textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+}
+function showWin(){
+  const got = M.items.filter(i => i.got), n = M.items.length;
+  const ballPts = got.reduce((a, i) => a + BALL[i.type].p, 0);
+  const par = (M.pathTiles + (M.room ? M.detour : 0)) / SPEED * 2.2 + 10;
+  const speedPts = Math.min(200, Math.max(0, Math.round((par - tPlay) * 3)));
+  const reward = M.room && M.room.got;
+  const rewardPts = reward ? (M.room.reward.type === "mon" ? 150 : BALL.master.p) : 0;
+  const keyPts = M.key && M.key.got ? 30 : 0;
+  const total = ballPts + keyPts + rewardPts + M.meta + speedPts;
+  const all = got.length === n, m = all && (!M.room || reward) ? 3 : (reward || got.length * 2 >= n) ? 2 : 1;
+  let prev = 0;
+  if(cfg.mode === "adv") prev = J.medalla("lab", cfg.i, m);
+  $("wMed").innerHTML = J.medallaSVG(m, 100);
+  $("wTitle").textContent = `¡Medalla de ${J.MEDALLAS[m]}!`;
+  const rows = [[`🏁 Llegaste a la meta`, M.meta, true], [`⚪ Poké Balls ${got.length} de ${n}`, ballPts, got.length > 0]];
+  if(M.key) rows.push([`🔑 Llave`, keyPts, !!keyPts]);
+  if(M.room) rows.push([reward ? (M.room.reward.type === "mon" ? `🎁 Liberaste a ${J.BY[M.room.freed].n}` : "✨ Master Ball") : "🎁 Zona secreta (sin abrir)", rewardPts, reward]);
+  const s = Math.round(tPlay);
+  rows.push([`⚡ Rapidez · ${Math.floor(s/60)}:${String(s%60).padStart(2,"0")}`, speedPts, speedPts > 0]);
+  $("wList").innerHTML = rows.map(([t, v, okk]) => `<li class="${okk ? "" : "miss"}"><span>${t}</span><b>+${J.fmt(v)}</b></li>`).join("");
+  countUp($("wTotal"), total);
+  const nextOk = cfg.mode === "adv" && cfg.i < ADV.length - 1;
+  $("wNext").hidden = !nextOk;
+  $("wAgain").textContent = cfg.mode === "adv" ? "🔁 Otra vez" : "🎲 Otro laberinto";
+  J.pedirNombre($("wName"), "laberinto", cfg.mode === "adv" ? "aventura" : "libre", {p:total, l:cfg.mode === "adv" ? levelName() : "Libre: " + levelName().replace(/^\S+ /, ""), m, mon});
+  $("winOv").hidden = false; J.confeti();
+  const tips = [];
+  if(m < 3){
+    if(got.length < n) tips.push(`Para el oro, junta las ${n} Poké Balls`);
+    if(M.room && !reward) tips.push(got.length < n ? "y abre la zona secreta" : "Para el oro, abre la zona secreta con la llave");
+  }
+  let say = `¡Llegaste a la meta! Medalla de ${J.MEDALLAS[m]}.`;
+  if(cfg.mode === "adv" && !prev && nextOk) say += ` ¡Abriste el nivel ${cfg.i + 2}!`;
+  else if(m > prev && prev) say += " ¡Mejoraste tu medalla!";
+  if(tips.length) say += " " + tips.join(" ") + ".";
+  J.speak(say);
+}
+function countUp(el, to){
+  const t0 = performance.now(), dur = 900;
+  const step = now => { const p = Math.min(1, (now - t0) / dur); el.textContent = J.fmt(Math.round(to * (1 - Math.pow(1 - p, 3)))); if(p < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+$("wNext").onclick = () => { J.hush(); start({mode:"adv", i:cfg.i + 1}); };
+$("wAgain").onclick = () => { J.hush(); start(cfg); };
+$("wMenu").onclick = () => showMenu();
+
+/* ---------- Efectos ---------- */
+function dust(){
+  const px = P.x + (P.tx - P.x) * P.prog, py = P.y + (P.ty - P.y) * P.prog, [dx, dy] = DIRS[P.dir];
+  FX.push({kind:"dust", x:px + .5 - dx*.2 + (Math.random() - .5)*.2, y:py + .78 - dy*.1, vx:-dx*.6 + (Math.random() - .5)*.5, vy:-dy*.6 - .25, life:.45, max:.45, s:.08 + Math.random()*.06});
+}
+function stars(x, y, c, n){
+  for(let i = 0; i < n; i++){
+    const a = Math.random() * Math.PI * 2, v = 1.2 + Math.random() * 2.2;
+    FX.push({kind:"star", x:x + .5, y:y + .4, vx:Math.cos(a)*v, vy:Math.sin(a)*v - 1, g:3, life:.9, max:.9, s:.1 + Math.random()*.1, c, vr:(Math.random() - .5)*8});
+  }
+}
+function floatPts(x, y, txt){ FX.push({kind:"text", x:x + .5, y:y + .1, vx:0, vy:-1.1, life:1, max:1, txt}); }
+
+/* ---------- Dibujar ---------- */
+function roundRect(g, x, y, w, h, r){ g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
+function shadow(x, y, rx, ry, a){ ctx.fillStyle = `rgba(30,20,10,${a || .22})`; ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, 7); ctx.fill(); }
+function star4(x, y, r){ ctx.beginPath(); for(let i = 0; i < 8; i++){ const a = i * Math.PI / 4, rr = i % 2 ? r * .38 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); ctx.fill(); }
+const sil = new Map();
+function silFrame(im, sx, sy, fw, fh){
+  const k = im.src + "|" + sx + "|" + sy;
+  let c = sil.get(k);
+  if(!c){
+    c = document.createElement("canvas"); c.width = fw; c.height = fh;
+    const g = c.getContext("2d"); g.drawImage(im, sx, sy, fw, fh, 0, 0, fw, fh);
+    g.globalCompositeOperation = "source-in"; g.fillStyle = "#2b2140"; g.fillRect(0, 0, fw, fh);
+    sil.set(k, c);
+  }
+  return c;
+}
+function frame(ts){
+  if(state === "menu"){ tick = 0; return; }
+  tick = requestAnimationFrame(frame);
+  const dt = last ? Math.min(.05, (ts - last) / 1000) : 0; last = ts;
+  const t = ts / 1000;
+  if(state === "play" || state === "won" || state === "freed") update(state === "freed" ? 0 : dt);
+  animT += dt * (P.moving ? 1.9 : 1);
+  draw(t);
+}
+function draw(t){
+  const S = Z.cur * DPR, cw = cv.width, ch = cv.height, ww = M.TW * S, wh = M.TH * S;
+  const ox = ww <= cw ? (cw - ww) / 2 : clamp(cw / 2 - (cam.x + .5) * S, cw - ww, 0);
+  const oy = wh <= ch ? (ch - wh) / 2 : clamp(ch / 2 - (cam.y + .5) * S, ch - wh, 0);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.fillStyle = "#1d5a2a"; ctx.fillRect(0, 0, cw, ch);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(ST, ox, oy, ww, wh);
+  ctx.drawImage(TR, ox, oy, ww, wh);
+  const X = x => ox + (x + .5) * S, Y = y => oy + (y + .5) * S;
+  drawGoal(X(M.goal.x), Y(M.goal.y), S, t);
+  if(M.room) drawRoom(X(M.room.cx), Y(M.room.cy), S, t);
+  if(M.door && M.door.anim < 1) drawDoor(X(M.door.x), Y(M.door.y), S, t, M.door.open ? M.door.anim : 0);
+  if(M.key && !M.key.got) drawKey(X(M.key.x), Y(M.key.y), S, t);
+  for(const it of M.items) if(!it.got) drawBall(it, X(it.x), Y(it.y), S, t);
+  drawPlayer(ox, oy, S, t);
+  drawFx(ox, oy, S);
+  if(Z.canFollow && !Z.map){
+    edgeMark(X(M.goal.x), Y(M.goal.y), "🏁");
+    if(M.key && !M.key.got) edgeMark(X(M.key.x), Y(M.key.y), "🔑");
+  }
+}
+function drawGoal(x, y, S, t){
+  const r = S * .44;
+  ctx.fillStyle = `rgba(255,226,122,${.35 + .2 * Math.sin(t * 4)})`; ctx.beginPath(); ctx.arc(x, y + S*.08, r * (1.08 + .06 * Math.sin(t * 4)), 0, 7); ctx.fill();
+  ctx.save(); ctx.beginPath(); ctx.ellipse(x, y + S*.14, r * .82, r * .55, 0, 0, 7); ctx.clip();
+  const q = r * .3;
+  for(let i = -3; i < 3; i++) for(let j = -2; j < 2; j++){ ctx.fillStyle = (i + j) & 1 ? "#2b2140" : "#ffffff"; ctx.fillRect(x + i*q, y + S*.14 + j*q, q, q); }
+  ctx.restore();
+  ctx.strokeStyle = "#2b2140"; ctx.lineWidth = S * .03; ctx.beginPath(); ctx.ellipse(x, y + S*.14, r * .82, r * .55, 0, 0, 7); ctx.stroke();
+  ctx.fillStyle = "#6b4a2a"; ctx.fillRect(x - S*.03, y - S*.58, S*.06, S*.74);
+  ctx.fillStyle = "#ffd23f"; ctx.beginPath(); ctx.arc(x, y - S*.6, S*.05, 0, 7); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x + S*.03, y - S*.55);
+  for(let k = 0; k <= 6; k++) ctx.lineTo(x + S*.03 + k * S*.07, y - S*.55 + Math.sin(t*6 - k*.9) * S*.03);
+  for(let k = 6; k >= 0; k--) ctx.lineTo(x + S*.03 + k * S*.07, y - S*.27 + Math.sin(t*6 - k*.9) * S*.03);
+  ctx.closePath(); ctx.fillStyle = "#E1262D"; ctx.fill();
+  ctx.fillStyle = "#fff"; star4(x + S*.24, y - S*.41 + Math.sin(t*6 - 3*.9) * S*.03, S*.08);
+}
+function drawRoom(x, y, S, t){
+  const r = M.room;
+  ctx.fillStyle = "rgba(255,255,255,.75)"; ctx.beginPath(); ctx.ellipse(x, y + S*.28, S*.48, S*.18, 0, 0, 7); ctx.fill();
+  ctx.strokeStyle = "rgba(170,95,150,.5)"; ctx.lineWidth = S*.03; ctx.stroke();
+  if(r.got) return;
+  const gr = ctx.createRadialGradient(x, y, 0, x, y, S*1.2);
+  gr.addColorStop(0, `rgba(255,240,170,${.55 + .15*Math.sin(t*3)})`); gr.addColorStop(1, "rgba(255,240,170,0)");
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, S*1.2, 0, 7); ctx.fill();
+  const bob = Math.sin(t * 2.4) * S * .06;
+  if(r.reward.type === "mon" && r.sil && ready(r.sil.i)){
+    const m = SPR[r.reward.id], [fw, fh, durs] = m.i, k = S / 24 * Math.min(1, 26 / m.b), fi = frameAt(durs, t);
+    const c = silFrame(r.sil.i, fi*fw, 0, fw, fh);
+    ctx.globalAlpha = .9; ctx.imageSmoothingEnabled = k < 1.6;
+    ctx.drawImage(c, x - fw*k/2, y - S*.45 - m.f*k - fh*k/2 + bob, fw*k, fh*k); ctx.globalAlpha = 1;
+    ctx.fillStyle = "#fff"; ctx.strokeStyle = "#7b4fd6"; ctx.lineWidth = S*.04;
+    ctx.beginPath(); ctx.arc(x + S*.42, y - S*.85 + bob, S*.17, 0, 7); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#7b4fd6"; ctx.font = `700 ${Math.round(S*.25)}px Mali, system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText("?", x + S*.42, y - S*.84 + bob);
+  }
+  const im = img(ITEM(r.reward.type === "mon" ? BALL.poke.f : BALL.master.f));
+  shadow(x, y + S*.3, S*.2, S*.07, .25);
+  if(ready(im)){ ctx.imageSmoothingEnabled = false; const z = S * .95; ctx.drawImage(im, x - z/2, y - z/2 + S*.05 + bob*.5, z, z); }
+  ctx.fillStyle = "#fff"; star4(x + S*.3, y - S*.15 + Math.sin(t*5)*S*.05, S*.09 * (1 + .4*Math.sin(t*7)));
+}
+function drawDoor(x, y, S, t, a){
+  ctx.save(); ctx.translate(x, y); ctx.globalAlpha = 1 - a;
+  const h = S * .5, sc = 1 - a * .25; ctx.scale(sc, sc);
+  ctx.fillStyle = "#8C5A2B"; roundRect(ctx, -h, -h, h*2, h*2, S*.08); ctx.fill();
+  ctx.strokeStyle = "#5E3A18"; ctx.lineWidth = S*.035;
+  ctx.beginPath(); for(const k of [-1/3, 1/3]){ ctx.moveTo(k*h, -h); ctx.lineTo(k*h, h); } ctx.stroke();
+  ctx.fillStyle = "#4b3b33"; ctx.fillRect(-h, -h*.62, h*2, S*.08); ctx.fillRect(-h, h*.5, h*2, S*.08);
+  ctx.strokeStyle = "#3a2a14"; ctx.lineWidth = S*.04; roundRect(ctx, -h, -h, h*2, h*2, S*.08); ctx.stroke();
+  const lift = a * S * .6;
+  if(hasKey && !a){ const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, S*.5); gr.addColorStop(0, `rgba(255,230,120,${.45 + .35*Math.sin(t*7)})`); gr.addColorStop(1, "rgba(255,230,120,0)"); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, S*.5, 0, 7); ctx.fill(); }
+  ctx.strokeStyle = "#A9B0C2"; ctx.lineWidth = S*.06; ctx.beginPath(); ctx.arc(0, -S*.06 - lift, S*.11, Math.PI, 0); ctx.stroke();
+  ctx.fillStyle = "#F2B705"; ctx.strokeStyle = "#A87400"; ctx.lineWidth = S*.03;
+  roundRect(ctx, -S*.16, -S*.07 - lift*.5, S*.32, S*.27, S*.05); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#4a3600"; ctx.beginPath(); ctx.arc(0, S*.03 - lift*.5, S*.04, 0, 7); ctx.fill(); ctx.fillRect(-S*.015, S*.03 - lift*.5, S*.03, S*.09);
+  ctx.restore();
+}
+function drawKey(x, y, S, t){
+  const bob = Math.sin(t * 3) * S * .06;
+  shadow(x, y + S*.26, S*.2, S*.07, .2);
+  ctx.save(); ctx.translate(x, y - S*.06 + bob); ctx.rotate(Math.sin(t * 2) * .18 - .5);
+  const gr = ctx.createRadialGradient(0, 0, 0, 0, 0, S*.55); gr.addColorStop(0, `rgba(255,232,120,${.55 + .2*Math.sin(t*5)})`); gr.addColorStop(1, "rgba(255,232,120,0)");
+  ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, S*.55, 0, 7); ctx.fill();
+  ctx.fillStyle = "#F7C51E"; ctx.strokeStyle = "#A87400"; ctx.lineWidth = S*.035;
+  ctx.beginPath(); ctx.arc(-S*.17, 0, S*.14, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#A87400"; ctx.beginPath(); ctx.arc(-S*.17, 0, S*.05, 0, 7); ctx.fill();
+  ctx.fillStyle = "#F7C51E";
+  ctx.beginPath(); ctx.rect(-S*.04, -S*.04, S*.32, S*.08); ctx.rect(S*.17, S*.04, S*.05, S*.08); ctx.rect(S*.24, S*.04, S*.05, S*.11); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(-S*.03, -S*.035, S*.28, S*.02);
+  ctx.restore();
+  ctx.fillStyle = "#fff"; star4(x + S*.28, y - S*.28 + bob, S*.07 * (1 + .5*Math.sin(t*6)));
+}
+function drawBall(it, x, y, S, t){
+  const b = BALL[it.type], im = img(ITEM(b.f)), bob = Math.sin(t * 3 + it.ph) * S * .05;
+  shadow(x, y + S*.24, S*.18 - bob*.3, S*.06, .2);
+  if(ready(im)){ ctx.imageSmoothingEnabled = false; const z = S * .78; ctx.drawImage(im, x - z/2, y - z/2 - S*.04 + bob, z, z); }
+  else{ ctx.fillStyle = it.type === "poke" ? "#E1262D" : "#2F7BE5"; ctx.beginPath(); ctx.arc(x, y - S*.04 + bob, S*.18, 0, 7); ctx.fill(); }
+  if(it.type !== "poke"){ ctx.fillStyle = "#fff"; star4(x + S*.2, y - S*.24 + bob, S*.06 * (1 + .6*Math.sin(t*6 + it.ph))); }
+}
+function drawPlayer(ox, oy, S, t){
+  const px = P.moving ? P.x + (P.tx - P.x) * P.prog : P.x, py = P.moving ? P.y + (P.ty - P.y) * P.prog : P.y;
+  let x = ox + (px + .5) * S, y = oy + (py + .5) * S;
+  if(P.bump > 0){ const [dx, dy] = DIRS[P.face], k = Math.sin(P.bump * Math.PI) * S * .1; x += dx * k; y += dy * k; }
+  const m = SPR[mon], k = S / 24 * Math.min(1, 30 / m.b), feet = y + S * .3;
+  shadow(x, feet, S * .28, S * .1, .25);
+  const a = P.hop > 0 ? "h" : P.moving ? "w" : "i", im = SH && SH[a];
+  if(ready(im)){
+    const [fw, fh, durs] = m[a], fi = frameAt(durs, a === "h" ? hopT : animT), row = a === "h" ? 0 : ROW[P.face];
+    ctx.imageSmoothingEnabled = k < 1.6;
+    ctx.drawImage(im, fi*fw, row*fh, fw, fh, x - fw*k/2, feet - m.f*k - fh*k/2, fw*k, fh*k);
+  }else{
+    const art = img(J.ART(mon)), z = S * 1.05, b = Math.abs(Math.sin(animT * 8)) * S * (P.moving ? .1 : .03);
+    if(ready(art)) ctx.drawImage(art, x - z/2, feet - z - b, z, z);
+    else{ ctx.fillStyle = "#F2B705"; ctx.beginPath(); ctx.arc(x, feet - S*.3 - b, S*.3, 0, 7); ctx.fill(); }
+  }
+}
+function drawFx(ox, oy, S){
+  for(const f of FX){
+    const x = ox + f.x * S, y = oy + f.y * S, a = Math.max(0, f.life / f.max);
+    if(f.kind === "dust"){ ctx.fillStyle = `rgba(214,190,140,${a * .7})`; ctx.beginPath(); ctx.arc(x, y, S * f.s * (1.6 - a * .6), 0, 7); ctx.fill(); }
+    else if(f.kind === "star"){ ctx.save(); ctx.globalAlpha = a; ctx.translate(x, y); ctx.rotate(f.rot); ctx.fillStyle = f.c; star4(0, 0, S * f.s); ctx.restore(); }
+    else if(f.kind === "text"){
+      ctx.globalAlpha = Math.min(1, a * 2); ctx.font = `700 ${Math.round(S * .42)}px Mali, system-ui, sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.lineWidth = S * .08; ctx.strokeStyle = "#5a3a00"; ctx.strokeText(f.txt, x, y); ctx.fillStyle = "#ffe27a"; ctx.fillText(f.txt, x, y); ctx.globalAlpha = 1;
+    }
+  }
+}
+function edgeMark(x, y, emo){
+  const m = 34 * DPR, cw = cv.width, ch = cv.height;
+  if(x > m * .6 && x < cw - m * .6 && y > m * .6 && y < ch - m * .6) return;
+  const cx = cw / 2, cy = ch / 2, dx = x - cx, dy = y - cy;
+  const k = Math.min((cw / 2 - m) / Math.max(Math.abs(dx), 1e-3), (ch / 2 - m) / Math.max(Math.abs(dy), 1e-3));
+  const ex = cx + dx * k, ey = cy + dy * k, ang = Math.atan2(dy, dx), r = 19 * DPR;
+  ctx.save(); ctx.translate(ex, ey);
+  ctx.rotate(ang); ctx.fillStyle = "#7b4fd6"; ctx.beginPath(); ctx.moveTo(r + 11*DPR, 0); ctx.lineTo(r - 2*DPR, -8*DPR); ctx.lineTo(r - 2*DPR, 8*DPR); ctx.closePath(); ctx.fill(); ctx.rotate(-ang);
+  ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.strokeStyle = "#7b4fd6"; ctx.lineWidth = 3 * DPR;
+  ctx.beginPath(); ctx.arc(0, 0, r, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.font = `${Math.round(r * 1.05)}px system-ui, "Apple Color Emoji", "Segoe UI Emoji", sans-serif`; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillStyle = "#000";
+  ctx.fillText(emo, 0, r * .08);
+  ctx.restore();
+}
+
+/* ---------- Controles: deslizar, tocar y teclado ---------- */
+let sw = null;
+const stage = $("stage");
+stage.addEventListener("pointerdown", e => {
+  if(state !== "play") return;
+  J.actx();
+  sw = {x:e.clientX, y:e.clientY, id:e.pointerId, moved:false, last:null};
+  try{ stage.setPointerCapture(e.pointerId); }catch(err){}
+});
+stage.addEventListener("pointermove", e => {
+  if(!sw || e.pointerId !== sw.id || state !== "play") return;
+  const dx = e.clientX - sw.x, dy = e.clientY - sw.y;
+  if(Math.hypot(dx, dy) < 20) return;
+  const d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : (dy > 0 ? "d" : "u");
+  if(d !== sw.last){ input(d); sw.last = d; }
+  sw.x = e.clientX; sw.y = e.clientY; sw.moved = true;
+});
+stage.addEventListener("pointerup", e => {
+  if(!sw || e.pointerId !== sw.id) return;
+  const s = sw; sw = null;
+  if(!s.moved && state === "play") tapAt(e.clientX, e.clientY);
+});
+stage.addEventListener("pointercancel", () => { sw = null; });
+function tapAt(cx, cy){
+  const r = cv.getBoundingClientRect(), S = Z.cur;
+  const ww = M.TW * S, wh = M.TH * S;
+  const ox = ww <= VW ? (VW - ww) / 2 : clamp(VW / 2 - (cam.x + .5) * S, VW - ww, 0);
+  const oy = wh <= VH ? (VH - wh) / 2 : clamp(VH / 2 - (cam.y + .5) * S, VH - wh, 0);
+  const px = P.moving ? P.x + (P.tx - P.x) * P.prog : P.x, py = P.moving ? P.y + (P.ty - P.y) * P.prog : P.y;
+  const dx = (cx - r.left) - (ox + (px + .5) * S), dy = (cy - r.top) - (oy + (py + .4) * S);
+  if(Math.hypot(dx, dy) < S * .75){ P.hop = .45; hopT = 0; J.cry(mon); return; }   // tocar a tu Pokémon: salta y dice su nombre
+  input(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "r" : "l") : (dy > 0 ? "d" : "u"));
+}
+const KEYS = {ArrowUp:"u", ArrowDown:"d", ArrowLeft:"l", ArrowRight:"r", w:"u", s:"d", a:"l", d:"r", W:"u", S:"d", A:"l", D:"r"};
+document.addEventListener("keydown", e => {
+  if(e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+  if(state === "play" && KEYS[e.key]){ e.preventDefault(); input(KEYS[e.key]); return; }
+  if(e.key === "Escape" || e.key === "p" || e.key === "P"){ if(state === "play") pause(); else if(state === "pause") resume(); }
+  else if((e.key === "Enter" || e.key === " ") && state === "freed" && !$("freeOk").hidden){ e.preventDefault(); closeFreed(); }
+});
+
+/* ---------- Pausa ---------- */
+function pause(){
+  if(state !== "play") return;
+  state = "pause"; P.moving = false; snapPlayer();
+  const got = M.items.filter(i => i.got).length;
+  $("pauseText").textContent = `${levelName()} · ⚪ ${got}/${M.items.length}` + (M.key ? ` · 🔑 ${hasKey ? "¡la tienes!" : "falta"}` : "");
+  paintPSound(); $("pauseOv").hidden = false;
+}
+function snapPlayer(){ if(P.prog > .5){ P.x = P.tx; P.y = P.ty; } P.tx = P.x; P.ty = P.y; P.prog = 0; P.moving = false; }
+function resume(){ $("pauseOv").hidden = true; state = "play"; last = 0; }
+$("pauseBtn").onclick = () => { J.actx(); pause(); };
+$("resumeBtn").onclick = resume;
+$("newBtn").onclick = () => start(cfg);
+$("menuBtn").onclick = () => showMenu();
+$("mapBtn").onclick = () => { Z.map = !Z.map; Z.target = Z.canFollow && !Z.map ? Z.follow : Z.fit; $("mapBtn").setAttribute("aria-pressed", String(Z.map)); J.sfx.tap(); };
+const paintPSound = () => { $("pSound").textContent = J.sonido ? "🔊 Sonido: sí" : "🔇 Sonido: no"; };
+$("pSound").onclick = () => { $("soundBtn").click(); paintPSound(); };
+document.addEventListener("visibilitychange", () => { if(document.hidden && state === "play") pause(); });
+
+/* ---------- Barra ---------- */
+$("recBtn").onclick = () => { J.actx(); J.verRecords("laberinto", "Laberinto Pokémon", [["aventura","Aventura"],["libre","Juego libre"]]); };
+$("codeBtn").onclick = () => { J.actx(); J.verCodigo(() => { if(state === "menu") paintMenu(); }); };
+document.addEventListener("click", e => { if(e.target.closest('[data-a="rec"]')) $("recBtn").click(); });
+J.soundButton($("soundBtn"));
+paintPSound();
+
+const saved = J.pref("labMon");
+if(saved && J.isLibre(saved)) mon = saved;
+showMenu();
+</script>
+</body>
+</html>
