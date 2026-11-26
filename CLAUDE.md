@@ -6,7 +6,7 @@ Sitio estático de juegos de ocio para Lucas (7 años). Cloudflare Pages publica
 
 - `public/index.html` — portada con una tarjeta por juego (la más nueva primero).
 - `public/<juego>/index.html` — cada juego en su carpeta (minúsculas, sin acentos, con guiones), con una casita `href="../"` para regresar a la portada.
-- `public/pokedex/` — Pokédex con 3 modos: 📖 Pokédex (favoritos, evoluciones, debilidades), ❓ ¿Quién es ese Pokémon? (por silueta o por sonido) y 🎵 Música (canción con los cries + batería Básica/Rock/Fiesta e instrumentos de fondo sintetizados: bajo, guitarra, piano, campanitas; volumen). Búsqueda por voz 🎤 (Web Speech API, es-MX) en los tres modos. Usa PokeAPI y sprites/cries de GitHub (necesita internet).
+- `public/pokedex/` — Pokédex con 3 modos: 📖 Pokédex (favoritos, evoluciones, debilidades), ❓ ¿Quién es ese Pokémon? (por silueta o por sonido) y 🎵 Música (canción con los cries + batería Básica/Rock/Fiesta e instrumentos de fondo sintetizados: bajo, guitarra, piano, campanitas; volumen). Búsqueda por voz 🎤 (Web Speech API, es-MX o en-US) en los tres modos. Selector de idioma Español / English en el encabezado (ES por defecto; se guarda en `localStorage["dexLang"]`): todos los textos, la voz, el micrófono y los nombres de tipos, estadísticas y formas están en el diccionario `I18N` del script; al agregar texto nuevo hay que ponerlo en los dos idiomas. Usa PokeAPI y sprites/cries de GitHub (necesita internet).
 - `public/bloques/` — Aventura de Bloques: decenas (rojo), centenas (amarillo) y unidades (azul) con un compañero Pokémon que habla.
 - `public/comun/` — `juegos.js` y `juegos.css` compartidos por memorama y laberinto: los 15 Pokémon favoritos, sonido (cries, voz es-MX, efectos), progreso, récords, ventanas, medallas y confeti. Guarda en `localStorage["lucraft.juegos"]`.
   - Progreso: Pokémon liberados en el laberinto (en el orden `ORDEN`, Pikachu desde el inicio) y la mejor medalla por nivel (15 del laberinto, 3 del memorama).
@@ -18,7 +18,7 @@ Sitio estático de juegos de ocio para Lucas (7 años). Cloudflare Pages publica
 
 - Portada: fondo `#F4F0FF`, tarjetas blancas con borde lila `#B79CF0`, fuente Mali, primera letra del título en rojo `#E1262D`.
 - Botones grandes y textos cortos: lo usa un niño de 7 años, sobre todo en iPad.
-- Todo en español de México. Nada de datos personales, fotos ni nombres completos.
+- Todo en español de México (la Pokédex además tiene versión en inglés con el selector de idioma). Nada de datos personales, fotos ni nombres completos.
 
 ## Antes de hacer push
 

@@ -34,8 +34,14 @@ header{position:sticky;top:0;z-index:5;background:linear-gradient(var(--red),var
 .home{flex:none;width:40px;height:40px;border-radius:12px;background:rgba(255,255,255,.2);display:grid;place-items:center;text-decoration:none;font-size:22px}
 .lens{width:34px;height:34px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#d6f1ff,#2a8ee0 55%,#0b3f78);border:3px solid #fff;flex:none}
 h1{font-family:var(--fDisplay);font-size:20px;margin:0;letter-spacing:.05em;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:430px){h1{font-size:16px;letter-spacing:.02em}.lens{width:28px;height:28px}}
+@media (max-width:430px){h1{font-size:13px;letter-spacing:.01em;white-space:normal;line-height:1.05}.lens{width:28px;height:28px}.vbtn{padding:8px 9px;font-size:13px}}
 .vbtn{font:700 14px var(--fBody);border:0;border-radius:999px;padding:9px 12px;background:rgba(255,255,255,.2);color:#fff;cursor:pointer;flex:none}
+.lang{display:flex;flex:none;gap:2px;padding:3px;border-radius:999px;background:rgba(255,255,255,.2)}
+.lang button{font:800 13px var(--fBody);border:0;border-radius:999px;padding:6px 10px;background:transparent;color:#fff;cursor:pointer}
+.lang button[aria-pressed="true"]{background:#fff;color:var(--red2)}
+.lang button:focus-visible{outline:3px solid #ffbf00;outline-offset:2px}
+.lg-short{display:none}
+@media (max-width:520px){.lg-long{display:none}.lg-short{display:inline}.lang button{padding:6px 8px}}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px}
 .tabs button{font:800 15px var(--fBody);border:0;border-radius:14px;padding:10px 6px;cursor:pointer;background:rgba(255,255,255,.18);color:#fff}
 .tabs button[aria-pressed="true"]{background:#fff;color:var(--red2)}
@@ -184,25 +190,29 @@ main{padding-top:12px;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)
 <header>
   <div class="wrap">
     <div class="row">
-      <a class="home" href="../" aria-label="Regresar a los juegos">🏠</a>
+      <a class="home" href="../" data-i18n-aria="home">🏠</a>
       <div class="lens" aria-hidden="true"></div>
-      <h1>POKÉDEX DE LUCAS</h1>
+      <h1 data-i18n="h1">POKÉDEX DE LUCAS</h1>
       <button class="vbtn" id="voiceBtn" type="button">Voz: sí</button>
+      <div class="lang" id="lang" role="group" data-i18n-aria="langGroup">
+        <button type="button" data-l="es" aria-pressed="true" aria-label="Español" lang="es"><span class="lg-long">Español</span><span class="lg-short">ES</span></button>
+        <button type="button" data-l="en" aria-pressed="false" aria-label="English" lang="en"><span class="lg-long">English</span><span class="lg-short">EN</span></button>
+      </div>
     </div>
-    <nav class="tabs" id="tabs" aria-label="Modo">
-      <button type="button" data-m="dex" aria-pressed="true">📖 Pokédex</button>
-      <button type="button" data-m="quiz" aria-pressed="false">❓ ¿Quién es?</button>
-      <button type="button" data-m="music" aria-pressed="false">🎵 Música</button>
+    <nav class="tabs" id="tabs" data-i18n-aria="mode">
+      <button type="button" data-m="dex" aria-pressed="true" data-i18n="tabDex">📖 Pokédex</button>
+      <button type="button" data-m="quiz" aria-pressed="false" data-i18n="tabQuiz">❓ ¿Quién es?</button>
+      <button type="button" data-m="music" aria-pressed="false" data-i18n="tabMusic">🎵 Música</button>
     </nav>
     <div id="dexBar">
       <div class="search">
-        <input id="q" type="search" placeholder="Buscar nombre o número" aria-label="Buscar" autocomplete="off">
-        <button class="mic" id="micDex" type="button" aria-label="Buscar diciendo el nombre" hidden>🎤</button>
-        <select id="type" aria-label="Tipo"><option value="">Tipo</option></select>
-        <select id="gen" aria-label="Generación"><option value="">Gen</option></select>
-        <button class="dice" id="dice" type="button" aria-label="Pokémon sorpresa">🎲</button>
+        <input id="q" type="search" data-i18n-ph="searchPh" data-i18n-aria="search" placeholder="Buscar nombre o número" aria-label="Buscar" autocomplete="off">
+        <button class="mic" id="micDex" type="button" data-i18n-aria="micDex" aria-label="Buscar diciendo el nombre" hidden>🎤</button>
+        <select id="type" data-i18n-aria="type" aria-label="Tipo"><option value="">Tipo</option></select>
+        <select id="gen" data-i18n-aria="generation" aria-label="Generación"><option value="">Gen</option></select>
+        <button class="dice" id="dice" type="button" data-i18n-aria="surprise" aria-label="Pokémon sorpresa">🎲</button>
       </div>
-      <nav class="chips" id="chips" aria-label="Categoría"></nav>
+      <nav class="chips" id="chips" data-i18n-aria="category" aria-label="Categoría"></nav>
     </div>
   </div>
 </header>
@@ -219,68 +229,68 @@ main{padding-top:12px;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)
     <div class="quiz">
       <div class="qtop">
         <div class="qmode" id="qmode">
-          <button type="button" data-q="sil" aria-pressed="true">👀 Silueta</button>
-          <button type="button" data-q="snd" aria-pressed="false">👂 Sonido</button>
+          <button type="button" data-q="sil" aria-pressed="true" data-i18n="qSil">👀 Silueta</button>
+          <button type="button" data-q="snd" aria-pressed="false" data-i18n="qSnd">👂 Sonido</button>
         </div>
-        <select id="qgen" aria-label="Generación del juego"><option value="">Todas las gen</option></select>
+        <select id="qgen" data-i18n-aria="qgenAria" aria-label="Generación del juego"><option value="">Todas las gen</option></select>
         <div class="score"><span id="qScore">✅ 0</span><span id="qStreak">🔥 0</span></div>
       </div>
       <div class="qstage">
         <h3 id="qTitle">¿Quién es ese Pokémon?</h3>
-        <img id="qImg" class="sil" alt="Pokémon misterioso">
-        <button class="qsound" id="qSound" type="button" aria-label="Escuchar otra vez" hidden>🔊</button>
+        <img id="qImg" class="sil" data-i18n-alt="mystery" alt="Pokémon misterioso">
+        <button class="qsound" id="qSound" type="button" data-i18n-aria="listenAgain" aria-label="Escuchar otra vez" hidden>🔊</button>
         <div class="res" id="qRes"></div>
       </div>
       <div class="opts" id="qOpts"></div>
-      <button class="btn alt" id="micQuiz" type="button" hidden>🎤 Decir la respuesta</button>
+      <button class="btn alt" id="micQuiz" type="button" data-i18n="sayAnswer" hidden>🎤 Decir la respuesta</button>
       <p class="heard" id="heardQuiz" hidden></p>
-      <button class="btn go" id="qNext" type="button" hidden>Siguiente ▶</button>
+      <button class="btn go" id="qNext" type="button" data-i18n="next" hidden>Siguiente ▶</button>
     </div>
   </section>
 
   <section id="m-music" hidden>
     <div class="music">
       <div class="panel">
-        <h3>🎶 Mi canción <small id="songCount">0 / 16</small></h3>
+        <h3><span data-i18n="mySong">🎶 Mi canción</span> <small id="songCount">0 / 16</small></h3>
         <div class="show" id="show" hidden><img id="showImg" alt=""></div>
         <div class="song" id="song"></div>
         <div class="mctrl">
           <button class="btn go" id="playBtn" type="button">▶ Tocar</button>
-          <button class="btn alt" id="loopBtn" type="button" aria-pressed="false">🔁 Repetir</button>
-          <button class="btn alt" id="surpBtn" type="button">🎲 Sorpresa</button>
-          <button class="btn alt" id="clearBtn" type="button">🗑️ Borrar</button>
+          <button class="btn alt" id="loopBtn" type="button" aria-pressed="false" data-i18n="loop">🔁 Repetir</button>
+          <button class="btn alt" id="surpBtn" type="button" data-i18n="surpriseBtn">🎲 Sorpresa</button>
+          <button class="btn alt" id="clearBtn" type="button" data-i18n="clear">🗑️ Borrar</button>
         </div>
         <div class="row2">
-          <div class="vol"><span aria-hidden="true">🔈</span><input id="vol" type="range" min="0" max="100" step="5" aria-label="Volumen"><span aria-hidden="true">🔊</span></div>
+          <div class="vol"><span aria-hidden="true">🔈</span><input id="vol" type="range" min="0" max="100" step="5" data-i18n-aria="volume" aria-label="Volumen"><span aria-hidden="true">🔊</span></div>
         </div>
         <div class="row2" id="speed">
-          <span>Velocidad</span>
-          <button type="button" data-s="0" aria-pressed="false">🐢 Lento</button>
-          <button type="button" data-s="1" aria-pressed="true">🚶 Normal</button>
-          <button type="button" data-s="2" aria-pressed="false">🐇 Rápido</button>
+          <span data-i18n="speed">Velocidad</span>
+          <button type="button" data-s="0" aria-pressed="false" data-i18n="slow">🐢 Lento</button>
+          <button type="button" data-s="1" aria-pressed="true" data-i18n="normal">🚶 Normal</button>
+          <button type="button" data-s="2" aria-pressed="false" data-i18n="fast">🐇 Rápido</button>
         </div>
         <div class="row2" id="kits">
-          <span>🥁 Batería</span>
-          <button type="button" data-k="0">Sin</button>
-          <button type="button" data-k="1">Básica</button>
-          <button type="button" data-k="2">Rock</button>
-          <button type="button" data-k="3">Fiesta</button>
+          <span data-i18n="drums">🥁 Batería</span>
+          <button type="button" data-k="0" data-i18n="kitNone">Sin</button>
+          <button type="button" data-k="1" data-i18n="kitBasic">Básica</button>
+          <button type="button" data-k="2" data-i18n="kitRock">Rock</button>
+          <button type="button" data-k="3" data-i18n="kitParty">Fiesta</button>
         </div>
         <div class="row2" id="insts">
-          <span>De fondo</span>
-          <button type="button" data-in="bass">🎸 Bajo</button>
-          <button type="button" data-in="gtr">🪕 Guitarra</button>
-          <button type="button" data-in="piano">🎹 Piano</button>
-          <button type="button" data-in="bell">🔔 Campanitas</button>
+          <span data-i18n="backing">De fondo</span>
+          <button type="button" data-in="bass" data-i18n="bass">🎸 Bajo</button>
+          <button type="button" data-in="gtr" data-i18n="gtr">🪕 Guitarra</button>
+          <button type="button" data-in="piano" data-i18n="piano">🎹 Piano</button>
+          <button type="button" data-in="bell" data-i18n="bell">🔔 Campanitas</button>
         </div>
-        <p class="mnote">Toca un Pokémon de tu canción para cambiar su voz: 🎵 normal → ⬆️ aguda → ⬇️ grave.</p>
+        <p class="mnote" data-i18n="mnote">Toca un Pokémon de tu canción para cambiar su voz: 🎵 normal → ⬆️ aguda → ⬇️ grave.</p>
       </div>
       <div class="panel">
-        <h3>➕ Agrega Pokémon</h3>
+        <h3 data-i18n="addTitle">➕ Agrega Pokémon</h3>
         <div class="pick">
-          <input id="mq" type="search" placeholder="Busca un Pokémon" aria-label="Buscar Pokémon para la canción" autocomplete="off">
-          <button class="mic" id="micMusic" type="button" aria-label="Agregar diciendo el nombre" style="background:var(--bg)" hidden>🎤</button>
-          <button class="dice" id="mDice" type="button" aria-label="Agregar uno sorpresa">🎲</button>
+          <input id="mq" type="search" data-i18n-ph="addPh" data-i18n-aria="addAria" placeholder="Busca un Pokémon" aria-label="Buscar Pokémon para la canción" autocomplete="off">
+          <button class="mic" id="micMusic" type="button" data-i18n-aria="micMusic" aria-label="Agregar diciendo el nombre" style="background:var(--bg)" hidden>🎤</button>
+          <button class="dice" id="mDice" type="button" data-i18n-aria="addSurprise" aria-label="Agregar uno sorpresa">🎲</button>
         </div>
         <p class="heard" id="heardMusic" hidden></p>
         <div class="picks" id="picks"></div>
@@ -294,11 +304,11 @@ main{padding-top:12px;padding-bottom:calc(28px + env(safe-area-inset-bottom,0px)
     <div class="stage" id="stage">
       <div class="ring"></div><div class="ground"></div>
       <div class="spin" id="spin"><img id="sprite" alt=""></div>
-      <button class="close" id="closeBtn" type="button" aria-label="Cerrar">✕</button>
-      <span class="hint">Desliza para girar</span>
+      <button class="close" id="closeBtn" type="button" data-i18n-aria="close" aria-label="Cerrar">✕</button>
+      <span class="hint" data-i18n="swipe">Desliza para girar</span>
       <div class="ctrls">
-        <button class="mini" id="autoBtn" type="button" aria-pressed="false">Girar</button>
-        <button class="mini" id="shinyBtn" type="button" aria-pressed="false">✦ Shiny</button>
+        <button class="mini" id="autoBtn" type="button" aria-pressed="false" data-i18n="spin">Girar</button>
+        <button class="mini" id="shinyBtn" type="button" aria-pressed="false" data-i18n="shiny">✦ Shiny</button>
       </div>
     </div>
     <div class="body" id="sheetBody"></div>
@@ -314,15 +324,15 @@ const TYPES = {normal:["Normal","#9a9a7a"],fire:["Fuego","#e8742e"],water:["Agua
   psychic:["Psíquico","#e8507a"],bug:["Bicho","#8a9e14"],rock:["Roca","#a08a28"],ghost:["Fantasma","#6a5694"],dragon:["Dragón","#5e3ee8"],
   dark:["Siniestro","#5e4a3e"],steel:["Acero","#7f7f9a"],fairy:["Hada","#d06f9c"]};
 const STATS = {hp:"PS",attack:"Ataque",defense:"Defensa","special-attack":"At. Esp.","special-defense":"Def. Esp.",speed:"Velocidad"};
+const STATS_EN = {hp:"HP",attack:"Attack",defense:"Defense","special-attack":"Sp. Atk","special-defense":"Sp. Def",speed:"Speed"};
 const GENS = [[1,151],[152,251],[252,386],[387,493],[494,649],[650,721],[722,809],[810,905],[906,1025]];
 const LEG = new Set([144,145,146,150,243,244,245,249,250,377,378,379,380,381,382,383,384,480,481,482,483,484,485,486,487,488,638,639,640,641,642,643,644,645,646,716,717,718,772,773,785,786,787,788,789,790,791,792,800,888,889,890,891,892,894,895,896,897,898,905,1001,1002,1003,1004,1007,1008,1014,1015,1016,1017,1024]);
 const MYTH = new Set([151,251,385,386,489,490,491,492,493,494,647,648,649,719,720,721,801,802,807,808,809,893,1025]);
 const UB = new Set([793,794,795,796,797,798,799,803,804,805,806]);
 const PARADOX = new Set([984,985,986,987,988,989,990,991,992,993,994,995,1005,1006,1009,1010,1020,1021,1022,1023]);
 const REG = {alola:"de Alola",galar:"de Galar",hisui:"de Hisui",paldea:"de Paldea"};
-const CATS = [
-  ["all","Todos"],["fav","⭐ Favoritos"],["mega","Mega"],["gmax","Gigamax"],["regional","Regionales"],["legend","Legendarios"],
-  ["myth","Singulares"],["ub","Ultraentes"],["paradox","Paradoja"],["other","Otras formas"]];
+const REG_EN = {alola:"Alolan",galar:"Galarian",hisui:"Hisuian",paldea:"Paldean"};
+const CATS = ["all","fav","mega","gmax","regional","legend","myth","ub","paradox","other"];
 
 let list = [], species = [], cat = "all", typeSet = null, voiceOn = true, current = null, audio = null, favs = new Set();
 const cache = {}, typeJson = {}, evoCache = {};
@@ -334,6 +344,105 @@ const store = {
 voiceOn = store.get("dexVoice2", true);
 favs = new Set(store.get("dexFavs", []));
 
+/* ---------- Idioma (Español / English) ---------- */
+const I18N = {
+es:{
+  title:"Pokédex de Lucas", h1:"POKÉDEX DE LUCAS", home:"Regresar a los juegos", langGroup:"Idioma",
+  voiceOn:"Voz: sí", voiceOff:"Voz: no", mode:"Modo",
+  tabDex:"📖 Pokédex", tabQuiz:"❓ ¿Quién es?", tabMusic:"🎵 Música",
+  searchPh:"Buscar nombre o número", search:"Buscar", micDex:"Buscar diciendo el nombre",
+  type:"Tipo", gen:"Gen", generation:"Generación", surprise:"Pokémon sorpresa", category:"Categoría",
+  loading:"Cargando Pokémon…", loadingType:"Cargando tipo…", typeError:"No se pudo cargar el tipo. Revisa tu internet.",
+  needInternet:"Necesito internet para cargar los Pokémon. Conéctate y recarga la página.",
+  noFavs:"Todavía no tienes favoritos. Abre un Pokémon y toca ⭐.", noMatch:"No hay Pokémon con esos filtros.",
+  meta:n=>`${n} Pokémon · toca uno para verlo y escucharlo`, fav:"Favorito",
+  cat_all:"Todos", cat_fav:"⭐ Favoritos", cat_mega:"Mega", cat_gmax:"Gigamax", cat_regional:"Regionales", cat_legend:"Legendarios",
+  cat_myth:"Singulares", cat_ub:"Ultraentes", cat_paradox:"Paradoja", cat_other:"Otras formas",
+  qSil:"👀 Silueta", qSnd:"👂 Sonido", qgenAria:"Generación del juego", allGens:"Todas las gen",
+  qTitleSil:"¿Quién es ese Pokémon?", qTitleSnd:"¿De quién es este sonido?", mystery:"Pokémon misterioso",
+  listenAgain:"Escuchar otra vez", sayAnswer:"🎤 Decir la respuesta", next:"Siguiente ▶",
+  correct:"¡Correcto! 🎉", correctStreak:n=>`¡Correcto! 🔥 ${n} seguidos`, almost:"¡Casi! 💪",
+  saidCorrect:n=>`¡Correcto! Es ${n}`, saidIs:n=>`Es ${n}`,
+  listening:"🎤 Te escucho… di el nombre de un Pokémon",
+  heard:(a,b)=>`🎤 Escuché: “${a}” → ${b}`,
+  notFoundHeard:a=>`🎤 Escuché: “${a}”, pero no encontré ese Pokémon. Intenta otra vez.`,
+  notFoundSpeak:"No lo encontré. Intenta otra vez.",
+  micPerm:"🎤 Necesito permiso para usar el micrófono.", noSpeech:"🎤 No escuché nada. Toca 🎤 y habla fuerte.",
+  mySong:"🎶 Mi canción", play:"▶ Tocar", playLoading:"⏳ Cargando…", stop:"⏹ Parar", loop:"🔁 Repetir",
+  surpriseBtn:"🎲 Sorpresa", clear:"🗑️ Borrar", volume:"Volumen", speed:"Velocidad",
+  slow:"🐢 Lento", normal:"🚶 Normal", fast:"🐇 Rápido", drums:"🥁 Batería",
+  kitNone:"Sin", kitBasic:"Básica", kitRock:"Rock", kitParty:"Fiesta", backing:"De fondo",
+  bass:"🎸 Bajo", gtr:"🪕 Guitarra", piano:"🎹 Piano", bell:"🔔 Campanitas",
+  mnote:"Toca un Pokémon de tu canción para cambiar su voz: 🎵 normal → ⬆️ aguda → ⬇️ grave.",
+  addTitle:"➕ Agrega Pokémon", addPh:"Busca un Pokémon", addAria:"Buscar Pokémon para la canción",
+  micMusic:"Agregar diciendo el nombre", addSurprise:"Agregar uno sorpresa",
+  songEmpty:"Tu canción está vacía.<br>Toca Pokémon de abajo para agregarlos 👇 o prueba 🎲 Sorpresa",
+  noPk:"No encontré ese Pokémon.", remove:"Quitar", slotAria:(n,v)=>`${n}, voz ${v}`,
+  tone0:"normal", tone1:"aguda", tone2:"grave",
+  close:"Cerrar", swipe:"Desliza para girar", spin:"Girar", shiny:"✦ Shiny",
+  loadingData:"Cargando datos…", offline:"Sin conexión. Revisa tu internet.",
+  favOn:"⭐ Favorito", favOff:"☆ Favorito",
+  evoTitle:"EVOLUCIONES", loadingShort:"Cargando…", noEvo:"Este Pokémon no evoluciona.", evoFail:"No se pudieron cargar.",
+  weakTitle:"DÉBIL CONTRA", weakRow:"DÉBIL CONTRA 💥", resistRow:"RESISTE 🛡️", immuneRow:"NO LE HACEN DAÑO 🚫", mtFail:"No se pudo cargar.",
+  height:"ALTURA", weight:"PESO", abilities:"HABILIDADES",
+  listen:"🔊 Escuchar", toSong:"🎵 A mi canción", added:"✅ ¡Agregado!", songFull:"Canción llena",
+  flavorFb:ty=>`Es un Pokémon de tipo ${ty.join(" y ")}.`
+},
+en:{
+  title:"Lucas's Pokédex", h1:"LUCAS'S POKÉDEX", home:"Back to the games", langGroup:"Language",
+  voiceOn:"Voice: on", voiceOff:"Voice: off", mode:"Mode",
+  tabDex:"📖 Pokédex", tabQuiz:"❓ Who's that?", tabMusic:"🎵 Music",
+  searchPh:"Search name or number", search:"Search", micDex:"Search by saying the name",
+  type:"Type", gen:"Gen", generation:"Generation", surprise:"Surprise Pokémon", category:"Category",
+  loading:"Loading Pokémon…", loadingType:"Loading type…", typeError:"Couldn't load the type. Check your internet.",
+  needInternet:"I need internet to load the Pokémon. Connect and reload the page.",
+  noFavs:"You don't have favorites yet. Open a Pokémon and tap ⭐.", noMatch:"No Pokémon match those filters.",
+  meta:n=>`${n} Pokémon · tap one to see and hear it`, fav:"Favorite",
+  cat_all:"All", cat_fav:"⭐ Favorites", cat_mega:"Mega", cat_gmax:"Gigantamax", cat_regional:"Regional", cat_legend:"Legendary",
+  cat_myth:"Mythical", cat_ub:"Ultra Beasts", cat_paradox:"Paradox", cat_other:"Other forms",
+  qSil:"👀 Silhouette", qSnd:"👂 Sound", qgenAria:"Game generation", allGens:"All gens",
+  qTitleSil:"Who's that Pokémon?", qTitleSnd:"Whose sound is this?", mystery:"Mystery Pokémon",
+  listenAgain:"Listen again", sayAnswer:"🎤 Say the answer", next:"Next ▶",
+  correct:"Correct! 🎉", correctStreak:n=>`Correct! 🔥 ${n} in a row`, almost:"Almost! 💪",
+  saidCorrect:n=>`Correct! It's ${n}`, saidIs:n=>`It's ${n}`,
+  listening:"🎤 I'm listening… say a Pokémon's name",
+  heard:(a,b)=>`🎤 I heard: “${a}” → ${b}`,
+  notFoundHeard:a=>`🎤 I heard: “${a}”, but I couldn't find that Pokémon. Try again.`,
+  notFoundSpeak:"I couldn't find it. Try again.",
+  micPerm:"🎤 I need permission to use the microphone.", noSpeech:"🎤 I didn't hear anything. Tap 🎤 and speak up.",
+  mySong:"🎶 My song", play:"▶ Play", playLoading:"⏳ Loading…", stop:"⏹ Stop", loop:"🔁 Loop",
+  surpriseBtn:"🎲 Surprise", clear:"🗑️ Clear", volume:"Volume", speed:"Speed",
+  slow:"🐢 Slow", normal:"🚶 Normal", fast:"🐇 Fast", drums:"🥁 Drums",
+  kitNone:"None", kitBasic:"Basic", kitRock:"Rock", kitParty:"Party", backing:"Backing",
+  bass:"🎸 Bass", gtr:"🪕 Guitar", piano:"🎹 Piano", bell:"🔔 Bells",
+  mnote:"Tap a Pokémon in your song to change its voice: 🎵 normal → ⬆️ high → ⬇️ low.",
+  addTitle:"➕ Add Pokémon", addPh:"Search for a Pokémon", addAria:"Search Pokémon for the song",
+  micMusic:"Add by saying the name", addSurprise:"Add a surprise one",
+  songEmpty:"Your song is empty.<br>Tap the Pokémon below to add them 👇 or try 🎲 Surprise",
+  noPk:"I couldn't find that Pokémon.", remove:"Remove", slotAria:(n,v)=>`${n}, ${v} voice`,
+  tone0:"normal", tone1:"high", tone2:"low",
+  close:"Close", swipe:"Swipe to spin", spin:"Spin", shiny:"✦ Shiny",
+  loadingData:"Loading data…", offline:"No connection. Check your internet.",
+  favOn:"⭐ Favorite", favOff:"☆ Favorite",
+  evoTitle:"EVOLUTIONS", loadingShort:"Loading…", noEvo:"This Pokémon doesn't evolve.", evoFail:"Couldn't load.",
+  weakTitle:"WEAK AGAINST", weakRow:"WEAK AGAINST 💥", resistRow:"RESISTS 🛡️", immuneRow:"NO DAMAGE FROM 🚫", mtFail:"Couldn't load.",
+  height:"HEIGHT", weight:"WEIGHT", abilities:"ABILITIES",
+  listen:"🔊 Listen", toSong:"🎵 Add to my song", added:"✅ Added!", songFull:"Song full",
+  flavorFb:ty=>`It's a ${ty.join("/")}-type Pokémon.`
+}};
+let lang = store.get("dexLang", "es"); if(lang!=="en") lang="es";
+let statusKey = "loading";
+function t(k, ...a){ const v = (I18N[lang]||I18N.es)[k] ?? I18N.es[k]; return typeof v==="function" ? v(...a) : v; }
+const typeName = k => lang==="en" ? pretty(k) : TYPES[k][0];
+const statName = k => (lang==="en" ? STATS_EN : STATS)[k];
+const VOICE = {es:{pref:/es[-_]MX/i, any:/^es/i, def:"es-MX"}, en:{pref:/en[-_]US/i, any:/^en/i, def:"en-US"}};
+/* Nombre, categoría y descripción del Pokémon en el idioma actual (getData guarda los dos) */
+function loc(p, x){
+  const l = x.L[lang];
+  return {name: p.form ? p.form.pre + l.nm + p.form.suf : l.nm, genus: l.genus,
+          flavor: l.flavor || t("flavorFb", x.d.types.map(y=>typeName(y.type.name)))};
+}
+
 const pretty = n => n.replace(/-/g," ").replace(/\b\w/g,c=>c.toUpperCase());
 const pad = id => "#"+String(id).padStart(4,"0");
 const norm = s => s.normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase().trim();
@@ -344,10 +453,11 @@ const imgTag = (id, cls="") => `<img loading="lazy" alt="" ${cls?`class="${cls}"
 
 function formInfo(name, base){
   const rest = name.slice(base.length+1).split("-");
-  const B = pretty(base);
+  const B = pretty(base), en = lang==="en";
   if(rest.includes("mega")){ const x = rest.filter(t=>t!=="mega").join(" ").toUpperCase(); return {cat:"mega", label:`Mega ${B}${x?" "+x:""}`, pre:"Mega ", suf:x?" "+x:""}; }
-  if(rest[0]==="primal") return {cat:"mega", label:`${B} Primigenio`, pre:"", suf:" Primigenio"};
-  if(rest.includes("gmax")) return {cat:"gmax", label:`${B} Gigamax`, pre:"", suf:" Gigamax"};
+  if(rest[0]==="primal") return en ? {cat:"mega", label:`Primal ${B}`, pre:"Primal ", suf:""} : {cat:"mega", label:`${B} Primigenio`, pre:"", suf:" Primigenio"};
+  if(rest.includes("gmax")) return en ? {cat:"gmax", label:`Gigantamax ${B}`, pre:"Gigantamax ", suf:""} : {cat:"gmax", label:`${B} Gigamax`, pre:"", suf:" Gigamax"};
+  if(REG[rest[0]] && en){ const ex = rest.slice(1).join(" "), pre = REG_EN[rest[0]]+" ", suf = ex?` (${ex})`:""; return {cat:"regional", label:pre+B+suf, pre, suf}; }
   if(REG[rest[0]]){ const ex = rest.slice(1).join(" "); const suf = ` ${REG[rest[0]]}${ex?" ("+ex+")":""}`; return {cat:"regional", label:B+suf, pre:"", suf}; }
   const suf = ` (${rest.join(" ")})`; return {cat:"other", label:B+suf, pre:"", suf};
 }
@@ -374,21 +484,26 @@ function setMode(m){
 }
 
 /* ---------- Pokédex ---------- */
-function buildUI(){
-  const typeOpts = Object.entries(TYPES).map(([k,v])=>`<option value="${k}">${v[0]}</option>`).join("");
+function buildOptions(){
+  const tv=$("type").value, gv=$("gen").value, qv=$("qgen").value;
+  const typeOpts = Object.keys(TYPES).map(k=>`<option value="${k}">${typeName(k)}</option>`).join("");
   const genOpts = GENS.map((g,i)=>`<option value="${i}">Gen ${i+1}</option>`).join("");
-  $("type").innerHTML = `<option value="">Tipo</option>` + typeOpts;
-  $("gen").innerHTML = `<option value="">Gen</option>` + genOpts;
-  $("qgen").innerHTML = `<option value="">Todas las gen</option>` + genOpts;
+  $("type").innerHTML = `<option value="">${t("type")}</option>` + typeOpts;
+  $("gen").innerHTML = `<option value="">${t("gen")}</option>` + genOpts;
+  $("qgen").innerHTML = `<option value="">${t("allGens")}</option>` + genOpts;
+  $("type").value=tv; $("gen").value=gv; $("qgen").value=qv;
+  $("chips").innerHTML = CATS.map(k=>`<button type="button" data-c="${k}" aria-pressed="${k===cat}">${t("cat_"+k)}<span id="n-${k}"></span></button>`).join("");
+}
+function buildUI(){
+  buildOptions();
   $("qgen").value = store.get("quizGen", "");
-  $("chips").innerHTML = CATS.map(([k,l])=>`<button type="button" data-c="${k}" aria-pressed="${k===cat}">${l}<span id="n-${k}"></span></button>`).join("");
   $("chips").onclick = e=>{ const b=e.target.closest("button"); if(!b) return; cat=b.dataset.c;
     document.querySelectorAll("#chips button").forEach(x=>x.setAttribute("aria-pressed", x===b)); render(); };
   $("q").oninput = render; $("gen").onchange = render;
   $("type").onchange = async ()=>{
-    const t = $("type").value; if(!t){ typeSet=null; return render(); }
-    try{ $("status").hidden=false; $("status").textContent="Cargando tipo…"; const j = await getType(t); typeSet = new Set(j.pokemon.map(x=>+x.pokemon.url.split("/").filter(Boolean).pop())); }
-    catch(e){ $("status").textContent="No se pudo cargar el tipo. Revisa tu internet."; return; }
+    const tp = $("type").value; if(!tp){ typeSet=null; return render(); }
+    try{ $("status").hidden=false; $("status").textContent=t("loadingType"); const j = await getType(tp); typeSet = new Set(j.pokemon.map(x=>+x.pokemon.url.split("/").filter(Boolean).pop())); }
+    catch(e){ $("status").textContent=t("typeError"); return; }
     render();
   };
   $("dice").onclick = ()=>{ const v = visible(); const pool = v.length ? v : species; if(pool.length) openSheet(rnd(pool)); };
@@ -407,26 +522,28 @@ function render(){
     return true;
   });
   const inCat = (p,k)=> k==="all" ? !p.form : k==="fav" ? favs.has(p.id) : p.cats.includes(k);
-  CATS.forEach(([k])=>{ const el=$("n-"+k); if(el) el.textContent = base.filter(p=>inCat(p,k)).length; });
+  CATS.forEach(k=>{ const el=$("n-"+k); if(el) el.textContent = base.filter(p=>inCat(p,k)).length; });
   const shown = base.filter(p=>inCat(p,cat));
-  $("meta").textContent = `${shown.length} Pokémon · toca uno para verlo y escucharlo`;
+  $("meta").textContent = t("meta", shown.length);
   $("grid").innerHTML = shown.map(p=>`<button class="card" type="button" data-id="${p.id}">
-    ${favs.has(p.id)?`<span class="fav" aria-label="Favorito">⭐</span>`:""}${imgTag(p.id)}
-    <span class="num">${pad(p.sid)}</span><span class="nm">${p.label}</span>${p.form?`<span class="tag">${CATS.find(c=>c[0]===p.form.cat)[1]}</span>`:""}</button>`).join("");
+    ${favs.has(p.id)?`<span class="fav" aria-label="${t("fav")}">⭐</span>`:""}${imgTag(p.id)}
+    <span class="num">${pad(p.sid)}</span><span class="nm">${p.label}</span>${p.form?`<span class="tag">${t("cat_"+p.form.cat)}</span>`:""}</button>`).join("");
   $("status").hidden = shown.length>0;
-  if(!shown.length) $("status").textContent = cat==="fav" ? "Todavía no tienes favoritos. Abre un Pokémon y toca ⭐." : "No hay Pokémon con esos filtros.";
+  if(!shown.length) $("status").textContent = cat==="fav" ? t("noFavs") : t("noMatch");
 }
 
 async function getData(p){
   if(cache[p.id]) return cache[p.id];
   const [d,s] = await Promise.all([fetch(API+"pokemon/"+p.id).then(r=>r.json()), fetch(API+"pokemon-species/"+p.sid).then(r=>r.json())]);
-  const baseEs = (s.names.find(n=>n.language.name==="es")||{}).name || pretty(p.base);
-  const nameEs = p.form ? p.form.pre + baseEs + p.form.suf : baseEs;
-  const genus = (s.genera.find(n=>n.language.name==="es")||s.genera.find(n=>n.language.name==="en")||{}).genus || "";
-  const es = s.flavor_text_entries.filter(f=>f.language.name==="es");
   const clean = t=>t.replace(/[\n\f­]/g," ").replace(/\s+/g," ").trim();
-  const flavor = es.length ? clean(es[es.length-1].flavor_text) : `Es un Pokémon de tipo ${d.types.map(x=>TYPES[x.type.name][0]).join(" y ")}.`;
-  return cache[p.id] = {d, nameEs, genus, flavor, evoUrl: s.evolution_chain && s.evolution_chain.url};
+  const L = {};
+  ["es","en"].forEach(lg=>{
+    const nm = (s.names.find(n=>n.language.name===lg)||{}).name || pretty(p.base);
+    const genus = (s.genera.find(n=>n.language.name===lg)||s.genera.find(n=>n.language.name==="en")||{}).genus || "";
+    const fl = s.flavor_text_entries.filter(f=>f.language.name===lg);
+    L[lg] = {nm, genus, flavor: fl.length ? clean(fl[fl.length-1].flavor_text) : ""};
+  });
+  return cache[p.id] = {d, L, evoUrl: s.evolution_chain && s.evolution_chain.url};
 }
 
 /* Evoluciones: lista de etapas; cada etapa puede tener varias ramas (p. ej. Eevee) */
@@ -450,14 +567,15 @@ async function getMatchups(types){
   const pick = f=>Object.entries(mult).filter(([,v])=>f(v)).sort((a,b)=>b[1]-a[1]);
   return {weak:pick(v=>v>1), resist:pick(v=>v>0&&v<1), immune:pick(v=>v===0)};
 }
-const typeChip = (k, m)=>`<span class="type" style="background:${TYPES[k][1]}">${TYPES[k][0]}${m&&m!==2&&m!==.5?`<small>×${m===.25?"¼":m}</small>`:""}</span>`;
+const typeChip = (k, m)=>`<span class="type" style="background:${TYPES[k][1]}">${typeName(k)}${m&&m!==2&&m!==.5?`<small>×${m===.25?"¼":m}</small>`:""}</span>`;
 
 function speak(text){
   if(!voiceOn || !("speechSynthesis" in window)) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text), vs = speechSynthesis.getVoices();
-  u.voice = vs.find(v=>/es[-_]MX/i.test(v.lang)) || vs.find(v=>/^es/i.test(v.lang)) || null;
-  u.lang = u.voice ? u.voice.lang : "es-MX";
+  const V = VOICE[lang];
+  u.voice = vs.find(v=>V.pref.test(v.lang)) || vs.find(v=>V.any.test(v.lang)) || null;
+  u.lang = u.voice ? u.voice.lang : V.def;
   speechSynthesis.speak(u);
 }
 function playCry(p){
@@ -474,7 +592,7 @@ async function announce(p){
   const dp = getData(p).catch(()=>null);
   await playCry(p);
   const d = await dp; if(current!==p) return;
-  speak(d ? `${d.nameEs}. ${d.genus}. ${d.flavor}` : p.label);
+  if(d){ const o=loc(p,d); speak(`${o.name}. ${o.genus}. ${o.flavor}`); } else speak(p.label);
 }
 
 /* Visor giratorio: frente y espalda animados; al pasar de 90° muestra la espalda */
@@ -508,46 +626,46 @@ $("stage").addEventListener("pointermove",e=>{ if(dragX===null) return; angle+=(
 $("autoBtn").onclick=()=>{ auto=!auto; $("autoBtn").setAttribute("aria-pressed",auto); };
 $("shinyBtn").onclick=()=>{ shiny=!shiny; $("shinyBtn").setAttribute("aria-pressed",shiny); if(current){ srcs=spriteSet(current); side=""; draw(); } };
 
-async function openSheet(p){
-  current=p; $("modal").hidden=false; angle=0; side=""; srcs=spriteSet(p); draw();
-  if(!raf) loop();
-  $("sheetBody").innerHTML = `<div class="title"><h2 id="mName">${p.label}</h2><span class="num">${pad(p.sid)}</span></div><div class="status" style="padding:20px">Cargando datos…</div>`;
+async function openSheet(p, quiet){
+  current=p; $("modal").hidden=false;
+  if(!quiet){ angle=0; side=""; srcs=spriteSet(p); draw(); if(!raf) loop(); }
+  $("sheetBody").innerHTML = `<div class="title"><h2 id="mName">${p.label}</h2><span class="num">${pad(p.sid)}</span></div><div class="status" style="padding:20px">${t("loadingData")}</div>`;
   $("sheetBody").scrollIntoView?.({block:"nearest"});
-  announce(p);
-  let x; try{ x = await getData(p); }catch(e){ if(current===p) $("sheetBody").innerHTML += `<p class="flavor">Sin conexión. Revisa tu internet.</p>`; return; }
+  if(!quiet) announce(p);
+  let x; try{ x = await getData(p); }catch(e){ if(current===p) $("sheetBody").innerHTML += `<p class="flavor">${t("offline")}</p>`; return; }
   if(current!==p) return;
-  const d=x.d, isFav=favs.has(p.id);
+  const d=x.d, o=loc(p,x), isFav=favs.has(p.id);
   $("sheetBody").innerHTML = `
-    <div class="title"><h2 id="mName">${x.nameEs}</h2><span class="num">${pad(p.sid)}</span>
-      <button class="star" type="button" data-a="fav" aria-pressed="${isFav}">${isFav?"⭐ Favorito":"☆ Favorito"}</button></div>
-    <div class="genus">${x.genus}</div>
+    <div class="title"><h2 id="mName">${o.name}</h2><span class="num">${pad(p.sid)}</span>
+      <button class="star" type="button" data-a="fav" aria-pressed="${isFav}">${isFav?t("favOn"):t("favOff")}</button></div>
+    <div class="genus">${o.genus}</div>
     <div class="types">${d.types.map(t=>typeChip(t.type.name)).join("")}</div>
-    <p class="flavor">${x.flavor}</p>
-    <div class="sec" id="evoBox"><b>EVOLUCIONES</b><div class="evo">Cargando…</div></div>
-    <div class="sec" id="mtBox"><b>DÉBIL CONTRA</b>Cargando…</div>
+    <p class="flavor">${o.flavor}</p>
+    <div class="sec" id="evoBox"><b>${t("evoTitle")}</b><div class="evo">${t("loadingShort")}</div></div>
+    <div class="sec" id="mtBox"><b>${t("weakTitle")}</b>${t("loadingShort")}</div>
     <div class="facts">
-      <div><b>ALTURA</b>${(d.height/10).toFixed(1)} m</div>
-      <div><b>PESO</b>${(d.weight/10).toFixed(1)} kg</div>
-      <div style="grid-column:1/-1"><b>HABILIDADES</b>${d.abilities.map(a=>pretty(a.ability.name)).join(", ")}</div>
+      <div><b>${t("height")}</b>${(d.height/10).toFixed(1)} m</div>
+      <div><b>${t("weight")}</b>${(d.weight/10).toFixed(1)} kg</div>
+      <div style="grid-column:1/-1"><b>${t("abilities")}</b>${d.abilities.map(a=>pretty(a.ability.name)).join(", ")}</div>
     </div>
-    <div>${d.stats.map(s=>`<div class="stat"><span>${STATS[s.stat.name]}</span><span>${s.base_stat}</span><div class="track"><i style="width:${Math.min(100,s.base_stat/2.55)}%"></i></div></div>`).join("")}</div>
+    <div>${d.stats.map(s=>`<div class="stat"><span>${statName(s.stat.name)}</span><span>${s.base_stat}</span><div class="track"><i style="width:${Math.min(100,s.base_stat/2.55)}%"></i></div></div>`).join("")}</div>
     <div class="actions">
       <button class="btn" type="button" data-a="prev">◀</button>
-      <button class="btn" type="button" data-a="play">🔊 Escuchar</button>
-      <button class="btn" type="button" data-a="music">🎵 A mi canción</button>
+      <button class="btn" type="button" data-a="play">${t("listen")}</button>
+      <button class="btn" type="button" data-a="music">${t("toSong")}</button>
       <button class="btn" type="button" data-a="next">▶</button>
     </div>`;
   getEvo(x.evoUrl).then(st=>{
     if(current!==p) return; const box=$("evoBox").querySelector(".evo");
     const stages = (st||[]).map(s=>s.filter(id=>byId[id])).filter(s=>s.length);
-    if(stages.length<2){ box.textContent="Este Pokémon no evoluciona."; return; }
+    if(stages.length<2){ box.textContent=t("noEvo"); return; }
     box.innerHTML = stages.map(s=>`<div class="stg">${s.map(id=>`<button type="button" data-evo="${id}" aria-current="${id===p.sid}">${imgTag(id)}${byId[id].label}</button>`).join("")}</div>`).join(`<span class="arr">➜</span>`);
-  }).catch(()=>{ if(current===p) $("evoBox").querySelector(".evo").textContent="No se pudieron cargar."; });
+  }).catch(()=>{ if(current===p) $("evoBox").querySelector(".evo").textContent=t("evoFail"); });
   getMatchups(d.types.map(t=>t.type.name)).then(m=>{
     if(current!==p) return;
     const row=(t,a)=>a.length?`<b>${t}</b><div class="types">${a.map(([k,v])=>typeChip(k,v)).join("")}</div>`:"";
-    $("mtBox").innerHTML = row("DÉBIL CONTRA 💥", m.weak) + row("RESISTE 🛡️", m.resist) + row("NO LE HACEN DAÑO 🚫", m.immune);
-  }).catch(()=>{ if(current===p) $("mtBox").innerHTML="<b>DÉBIL CONTRA</b>No se pudo cargar."; });
+    $("mtBox").innerHTML = row(t("weakRow"), m.weak) + row(t("resistRow"), m.resist) + row(t("immuneRow"), m.immune);
+  }).catch(()=>{ if(current===p) $("mtBox").innerHTML=`<b>${t("weakTitle")}</b>${t("mtFail")}`; });
 }
 function visible(){ return [...document.querySelectorAll("#grid .card")].map(c=>byId[c.dataset.id]); }
 $("sheetBody").onclick = e=>{
@@ -556,8 +674,8 @@ $("sheetBody").onclick = e=>{
   const act=a.dataset.a;
   if(act==="play") return announce(current);
   if(act==="fav"){ favs.has(current.id)?favs.delete(current.id):favs.add(current.id); store.set("dexFavs",[...favs]);
-    const on=favs.has(current.id); a.setAttribute("aria-pressed",on); a.textContent=on?"⭐ Favorito":"☆ Favorito"; render(); return; }
-  if(act==="music"){ const ok=addToSong(current.id); a.textContent = ok ? "✅ ¡Agregado!" : "Canción llena"; return; }
+    const on=favs.has(current.id); a.setAttribute("aria-pressed",on); a.textContent=on?t("favOn"):t("favOff"); render(); return; }
+  if(act==="music"){ const ok=addToSong(current.id); a.textContent = ok ? t("added") : t("songFull"); return; }
   const v=visible(), i=v.indexOf(current), n=v[i+(act==="next"?1:-1)];
   if(n) openSheet(n);
 };
@@ -567,8 +685,9 @@ $("closeBtn").onclick = closeSheet;
 $("modal").onclick = e=>{ if(e.target.id==="modal") closeSheet(); };
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!$("modal").hidden) closeSheet(); });
 $("grid").onclick = e=>{ const c=e.target.closest(".card"); if(c) openSheet(byId[c.dataset.id]); };
-$("voiceBtn").onclick=()=>{ voiceOn=!voiceOn; $("voiceBtn").textContent="Voz: "+(voiceOn?"sí":"no"); if(!voiceOn&&"speechSynthesis" in window) speechSynthesis.cancel(); store.set("dexVoice2",voiceOn); };
-$("voiceBtn").textContent="Voz: "+(voiceOn?"sí":"no");
+$("voiceBtn").onclick=()=>{ voiceOn=!voiceOn; paintVoice(); if(!voiceOn&&"speechSynthesis" in window) speechSynthesis.cancel(); store.set("dexVoice2",voiceOn); };
+function paintVoice(){ $("voiceBtn").textContent = t(voiceOn?"voiceOn":"voiceOff"); }
+paintVoice();
 
 /* ---------- Voz: decir el nombre de un Pokémon (Web Speech API) ---------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -591,16 +710,16 @@ function listen(btn, heardEl, pool, onPick){
   if(!SR) return;
   if(rec){ rec.abort(); return; }
   if("speechSynthesis" in window) speechSynthesis.cancel();
-  rec = new SR(); rec.lang="es-MX"; rec.interimResults=false; rec.maxAlternatives=5;
-  recBtn=btn; btn.classList.add("on"); heardEl.hidden=false; heardEl.textContent="🎤 Te escucho… di el nombre de un Pokémon";
+  rec = new SR(); rec.lang=VOICE[lang].def; rec.interimResults=false; rec.maxAlternatives=5;
+  recBtn=btn; btn.classList.add("on"); heardEl.hidden=false; heardEl.textContent=t("listening");
   let got=false;
   rec.onresult = e=>{ got=true; const alts=[...e.results[0]].map(r=>r.transcript);
     const p = bestMatch(alts, typeof pool==="function" ? pool() : pool);
-    if(p){ heardEl.textContent=`🎤 Escuché: “${alts[0]}” → ${p.label}`; onPick(p); }
-    else { heardEl.textContent=`🎤 Escuché: “${alts[0]}”, pero no encontré ese Pokémon. Intenta otra vez.`; speak("No lo encontré. Intenta otra vez."); } };
-  rec.onerror = e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed") heardEl.textContent="🎤 Necesito permiso para usar el micrófono.";
-    else if(e.error==="no-speech") heardEl.textContent="🎤 No escuché nada. Toca 🎤 y habla fuerte."; };
-  rec.onend = ()=>{ btn.classList.remove("on"); rec=null; recBtn=null; if(!got && heardEl.textContent.startsWith("🎤 Te escucho")) heardEl.textContent="🎤 No escuché nada. Toca 🎤 y habla fuerte."; };
+    if(p){ heardEl.textContent=t("heard", alts[0], p.label); onPick(p); }
+    else { heardEl.textContent=t("notFoundHeard", alts[0]); speak(t("notFoundSpeak")); } };
+  rec.onerror = e=>{ if(e.error==="not-allowed"||e.error==="service-not-allowed") heardEl.textContent=t("micPerm");
+    else if(e.error==="no-speech") heardEl.textContent=t("noSpeech"); };
+  rec.onend = ()=>{ btn.classList.remove("on"); rec=null; recBtn=null; if(!got && heardEl.textContent===t("listening")) heardEl.textContent=t("noSpeech"); };
   try{ rec.start(); }catch(e){ btn.classList.remove("on"); rec=null; }
 }
 if(SR){
@@ -618,7 +737,7 @@ function quizPool(){
 }
 function paintQMode(){
   document.querySelectorAll("#qmode button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.q===qMode));
-  $("qTitle").textContent = qMode==="snd" ? "¿De quién es este sonido?" : "¿Quién es ese Pokémon?";
+  $("qTitle").textContent = t(qMode==="snd" ? "qTitleSnd" : "qTitleSil");
 }
 function newRound(){
   const pool = quizPool(); if(pool.length<3) return;
@@ -636,17 +755,18 @@ function newRound(){
   paintScore();
   if(qMode==="snd") playCry(ans);
 }
+function paintRes(){ if(!qState||!qState.done) return; $("qRes").textContent = qState.ok ? (qStreak>=3 ? t("correctStreak", qStreak) : t("correct")) : t("almost"); }
 function paintScore(){ $("qScore").textContent="✅ "+qScore; $("qStreak").textContent="🔥 "+qStreak; }
 function answer(i){
   if(!qState||qState.done||i<0) return;
   qState.done=true; const pick=qState.opts[i], ok = pick===qState.ans;
   $("qImg").className=""; $("qSound").hidden=true;
   [...$("qOpts").children].forEach((x,k)=>{ if(qState.opts[k]===qState.ans) x.classList.add("ok"); else if(k===i) x.classList.add("bad"); });
-  if(ok){ qScore++; qStreak++; store.set("quizScore",qScore); $("qRes").textContent = qStreak>=3 ? `¡Correcto! 🔥 ${qStreak} seguidos` : "¡Correcto! 🎉"; }
-  else { qStreak=0; $("qRes").textContent="¡Casi! 💪"; }
-  paintScore(); $("qNext").hidden=false;
+  qState.ok=ok;
+  if(ok){ qScore++; qStreak++; store.set("quizScore",qScore); } else qStreak=0;
+  paintRes(); paintScore(); $("qNext").hidden=false;
   const p=qState.ans;
-  playCry(p).then(()=>speak(ok ? `¡Correcto! Es ${p.label}` : `Es ${p.label}`));
+  playCry(p).then(()=>speak(ok ? t("saidCorrect", p.label) : t("saidIs", p.label)));
 }
 $("qOpts").onclick = e=>{ const b=e.target.closest(".opt"); if(b) answer(+b.dataset.i); };
 $("qSound").onclick = ()=>{ if(qState) playCry(qState.ans); };
@@ -661,6 +781,7 @@ let song = store.get("dexSong", []).filter(x=>x && typeof x.id==="number"), spee
 let kit = store.get("dexKit", 1), vol = store.get("dexVol", 60), insts = new Set(store.get("dexInsts", ["bass"]));
 let ac=null, master=null; const bufs={};
 let playing=false, timer=null, step=0, beat=0, nextT=0, uiTimers=[];
+let playLabel="play"; function setPlay(k){ playLabel=k; $("playBtn").textContent=t(k); }
 function ctx(){
   if(!ac){ const C=window.AudioContext||window.webkitAudioContext; ac=new C(); master=ac.createGain(); master.connect(ac.destination); setVol(vol); }
   if(ac.state==="suspended") ac.resume(); return ac;
@@ -717,10 +838,10 @@ function addToSong(id){ if(song.length>=MAX) return false; song.push({id, t:0});
 function saveSong(){ store.set("dexSong", song); }
 function renderSong(){
   $("songCount").textContent = `${song.length} / ${MAX}`;
-  $("song").innerHTML = song.length ? song.map((s,i)=>`<button class="slot" type="button" data-i="${i}" aria-label="${byId[s.id]?byId[s.id].label:""}, voz ${["normal","aguda","grave"][s.t]}">
+  $("song").innerHTML = song.length ? song.map((s,i)=>`<button class="slot" type="button" data-i="${i}" aria-label="${t("slotAria", byId[s.id]?byId[s.id].label:"", t("tone"+s.t))}">
       <span class="n">${i+1}</span>${imgTag(s.id)}<span class="t">${TONES[s.t].i}</span>
-      <span class="x" role="button" data-x="${i}" aria-label="Quitar">✕</span></button>`).join("")
-    : `<div class="empty">Tu canción está vacía.<br>Toca Pokémon de abajo para agregarlos 👇 o prueba 🎲 Sorpresa</div>`;
+      <span class="x" role="button" data-x="${i}" aria-label="${t("remove")}">✕</span></button>`).join("")
+    : `<div class="empty">${t("songEmpty")}</div>`;
   $("playBtn").disabled = !song.length;
 }
 $("song").onclick = e=>{
@@ -731,13 +852,13 @@ $("song").onclick = e=>{
   if(!playing){ ctx(); playBuf(s.id, TONES[s.t].r); }
 };
 function renderPicks(){
-  if(!species.length){ $("picks").innerHTML=`<div class="empty">Cargando Pokémon…</div>`; return; }
+  if(!species.length){ $("picks").innerHTML=`<div class="empty">${t("loading")}</div>`; return; }
   const q=norm($("mq").value).replace("#","");
   let pool;
   if(q) pool = species.filter(p=>p.key.includes(q) || String(p.sid)===q.replace(/^0+/,"")).slice(0,60);
   else { const f=[...favs].map(id=>byId[id]).filter(Boolean); pool = [...f, ...species.slice(0, 60-f.length).filter(p=>!favs.has(p.id))]; }
   $("picks").innerHTML = pool.length ? pool.map(p=>`<button type="button" data-id="${p.id}">${imgTag(p.id)}${favs.has(p.id)?"⭐ ":""}${p.label}</button>`).join("")
-    : `<div class="empty">No encontré ese Pokémon.</div>`;
+    : `<div class="empty">${t("noPk")}</div>`;
 }
 $("mq").oninput = renderPicks;
 $("picks").onclick = e=>{ const b=e.target.closest("button[data-id]"); if(!b) return; const id=+b.dataset.id;
@@ -761,11 +882,11 @@ $("playBtn").onclick = async ()=>{
   if(playing) return stopSong();
   if(!song.length) return;
   const a=ctx(); if("speechSynthesis" in window) speechSynthesis.cancel();
-  $("playBtn").textContent="⏳ Cargando…"; $("playBtn").disabled=true;
+  setPlay("playLoading"); $("playBtn").disabled=true;
   await Promise.all(song.map(s=>loadBuf(s.id)));
   $("playBtn").disabled=false;
-  if(!song.length || mode!=="music"){ $("playBtn").textContent="▶ Tocar"; return; }
-  playing=true; step=0; beat=0; nextT=a.currentTime+.08; $("playBtn").textContent="⏹ Parar"; $("show").hidden=false;
+  if(!song.length || mode!=="music"){ setPlay("play"); return; }
+  playing=true; step=0; beat=0; nextT=a.currentTime+.08; setPlay("stop"); $("show").hidden=false;
   timer=setInterval(schedule,25); schedule();
 };
 function schedule(){
@@ -793,13 +914,40 @@ function light(i){
 function stopSong(){
   playing=false; if(timer) clearInterval(timer); timer=null; uiTimers.forEach(clearTimeout); uiTimers=[];
   document.querySelectorAll("#song .slot").forEach(el=>el.classList.remove("on"));
-  $("show").hidden=true; $("playBtn").textContent="▶ Tocar"; $("playBtn").disabled=!song.length;
+  $("show").hidden=true; setPlay("play"); $("playBtn").disabled=!song.length;
 }
+
+/* ---------- Cambiar idioma ---------- */
+function applyLang(){
+  document.documentElement.lang = lang==="en" ? "en" : "es-MX";
+  document.title = t("title");
+  document.querySelectorAll("[data-i18n]").forEach(el=>{ el.textContent = t(el.dataset.i18n); });
+  document.querySelectorAll("[data-i18n-ph]").forEach(el=>{ el.placeholder = t(el.dataset.i18nPh); });
+  document.querySelectorAll("[data-i18n-aria]").forEach(el=>{ el.setAttribute("aria-label", t(el.dataset.i18nAria)); });
+  document.querySelectorAll("[data-i18n-alt]").forEach(el=>{ el.alt = t(el.dataset.i18nAlt); });
+  document.querySelectorAll("#lang button").forEach(b=>b.setAttribute("aria-pressed", b.dataset.l===lang));
+  paintVoice(); buildOptions(); paintQMode(); setPlay(playLabel);
+  if(list.length) render(); else $("status").textContent = t(statusKey);
+  renderSong();
+  if(mode==="music") renderPicks();
+  if(qState && qState.done) paintRes();
+  if(current && !$("modal").hidden) openSheet(current, true);
+}
+function setLang(l){
+  lang = l; store.set("dexLang", l);
+  if("speechSynthesis" in window) speechSynthesis.cancel();
+  if(rec) rec.abort();
+  if(list.length){
+    list.forEach(p=>{ if(p.form){ p.form = formInfo(p.fname, p.base); p.label = p.form.label; } p.key = norm(p.label); delete p.sq; });
+  }
+  applyLang();
+}
+$("lang").onclick = e=>{ const b=e.target.closest("button[data-l]"); if(b && b.dataset.l!==lang) setLang(b.dataset.l); };
 
 /* ---------- Carga inicial ---------- */
 const byId = {};
 buildUI();
-renderSong();
+applyLang();
 const idOf = u=>+u.split("/").filter(Boolean).pop();
 Promise.all([fetch(API+"pokemon-species?limit=1025").then(r=>r.json()), fetch(API+"pokemon?limit=600&offset=1025").then(r=>r.json())])
 .then(([sp,fm])=>{
@@ -813,7 +961,7 @@ Promise.all([fetch(API+"pokemon-species?limit=1025").then(r=>r.json()), fetch(AP
     for(let k=parts.length-1;k>0;k--){ const b=parts.slice(0,k).join("-"); if(nameToId[b]){ base=b; break; } }
     if(!base) return;
     const form=formInfo(r.name, base);
-    list.push({id, sid:nameToId[base], base, label:form.label, form});
+    list.push({id, sid:nameToId[base], base, fname:r.name, label:form.label, form});
   });
   list.forEach(p=>{ p.cats=cats(p); p.key=norm(p.label); byId[p.id]=p; });
   list.sort((a,b)=>a.sid-b.sid || a.id-b.id);
@@ -821,7 +969,7 @@ Promise.all([fetch(API+"pokemon-species?limit=1025").then(r=>r.json()), fetch(AP
   render(); renderSong();
   if(mode==="quiz") newRound();
   if(mode==="music") renderPicks();
-}).catch(()=>{ $("status").textContent="Necesito internet para cargar los Pokémon. Conéctate y recarga la página."; });
+}).catch(()=>{ statusKey="needInternet"; $("status").textContent=t(statusKey); });
 </script>
 </body>
 </html>
